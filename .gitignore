@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# pdf
+/Shipping Document Verification Use Case.pdf
+
+# data
+data/attachments
+data/inbox
+data/sample_submission.json
+data/README.md
