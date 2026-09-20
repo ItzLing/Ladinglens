@@ -259,7 +259,7 @@ delete prior entries. See `AGENT.md` for the full protocol.
 - Consider making `CLASSIFICATION_CONFIDENCE_THRESHOLD` env-configurable if the team wants to
   sweep it without editing `app/pipeline/run.py`.
 
-**Synced through:** `1bf67c4` (still uncommitted)
+**Synced through:** `1bf67c4` (committed as `8b34d28`)
 
 ---
 
@@ -300,4 +300,54 @@ delete prior entries. See `AGENT.md` for the full protocol.
   so the 0.6 threshold may rarely bind. Worth confirming against the cache on a real run
   before spending effort tuning it.
 
-**Synced through:** `1bf67c4` (still uncommitted)
+**Synced through:** `1bf67c4` (committed as `8b34d28`)
+
+---
+
+## 2026-09-20 — Claude Code (provider-neutral client, Ollama by default)
+
+**What changed:**
+- `app/llm_client.py` rewritten against the **OpenAI SDK** instead of `google-genai`. Any
+  OpenAI-compatible endpoint now works, selected by `LLM_BASE_URL` / `LLM_API_KEY` /
+  `LLM_MODEL` / `LLM_MAX_TOKENS`. `call_json()`'s contract and `LLMUnavailableError` are
+  unchanged, so `classify.py`, `extract.py` and `run.py` needed no edits.
+- `requirements.txt`: `google-genai` -> `openai`.
+- `.env.example` / `.env`: provider blocks for Ollama (active default), Groq and Gemini.
+- `.gitignore`: added `data/data_v2/`, `data/server/`, `data/docker-compose.yml`.
+
+**Why:**
+- The Gemini free-tier quota was exhausted partway through a session, and a full run needs
+  1,000+ calls (520 classify + two extracts per `BL_COMPARISON`), which can exceed a hosted
+  free tier in a *single* run. Ollama runs locally with no quota at all, so prompt and
+  threshold iteration stops being rationed.
+- The gitignore addition is the urgent half: `data/data_v2/` holds `ground_truth.json`, and
+  `data/README.md` marks the bundle as the ORGANIZERS package ("Do NOT hand it to
+  participants"). It was untracked but unignored, so any `git add -A` would have committed
+  the answer key.
+
+**Decisions made:**
+- OpenAI-compatible over a provider-specific SDK: Ollama, Groq, Cerebras, OpenRouter and
+  Gemini all speak it, so provider choice became config. Develop free against a local model,
+  point at a hosted one for a final higher-quality run.
+- Env vars renamed `GEMINI_*` -> `LLM_*`, since they no longer describe one vendor.
+- `LLM_MAX_TOKENS` now resolved inside `call_json()` rather than at import, removing a
+  dependency on `load_dotenv()` running before the module is imported.
+- Default `llama3.1:8b` -- small enough to run on modest hardware, and the task (5-way
+  classification, 7 labeled fields from short clean text) is not especially demanding.
+
+**Verification:**
+- 8/8 pipeline routing checks and 7/7 client checks pass against stubs, covering: 429
+  retried then succeeding, connection-refused (Ollama not running) reported as
+  `LLMUnavailableError` rather than a document verdict, non-retryable 400 failing fast,
+  `finish_reason=length` truncation, malformed JSON, null content, and the outgoing request
+  carrying JSON mode plus the system prompt.
+- Not yet verified against a live model: **Ollama is not installed on this machine.**
+
+**Open questions / next steps:**
+- Install Ollama and `ollama pull llama3.1:8b`, then re-run the 3-email sanity check before
+  committing to all 520. An 8B model's JSON discipline is weaker than a hosted model's, so
+  watch for `unreadable` verdicts caused by malformed output rather than real defects.
+- `CLASSIFICATION_CONFIDENCE_THRESHOLD` is now `0.2` (lowered from `0.6`) so the baseline run
+  keeps the whole threshold range sweepable from `classify_cache.json`.
+- Local models may not honor `response_format={"type": "json_object"}` as reliably as the
+  hosted ones; if that shows up, the fallback is to strip code fences before `json.loads`.

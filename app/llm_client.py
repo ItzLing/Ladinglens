@@ -1,25 +1,21 @@
-"""Thin Google Gen AI (Gemini) SDK wrapper for JSON-only structured calls."""
+"""OpenAI-compatible client for JSON-only structured calls.
+
+Ollama, Groq, Cerebras, OpenRouter and Gemini all speak the OpenAI chat
+completions API, so the provider is a base URL plus a model name in .env rather
+than a code change. See .env.example for ready-made settings for each.
+"""
 import json
 import os
 import random
 import time
 from typing import Any, Optional
 
-from google import genai
-from google.genai import errors, types
+from openai import APIConnectionError, APIStatusError, OpenAI, RateLimitError
 
-# Free-tier quotas (~30 requests/min) make 429s routine on a full-inbox run, so
-# transient API failures are retried here instead of reaching the pipeline.
 MAX_ATTEMPTS = 5
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
 
-# Gemini 3.x spends "thinking" tokens out of the same budget as the reply, and
-# measured ~800-980 of them on a single extract call. At 1024 the JSON was being
-# truncated more often than not, which the pipeline then misread as an
-# unreadable document, so the default needs real headroom above that.
-DEFAULT_MAX_TOKENS = int(os.environ.get("GEMINI_MAX_TOKENS", "4096"))
-
-_client: Optional[genai.Client] = None
+_client: Optional[OpenAI] = None
 
 
 class LLMUnavailableError(RuntimeError):
@@ -32,50 +28,50 @@ class LLMUnavailableError(RuntimeError):
     """
 
 
-def _get_client() -> genai.Client:
+def _get_client() -> OpenAI:
     global _client
     if _client is None:
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "GEMINI_API_KEY is not set. Add it to .env before running the pipeline."
-            )
-        _client = genai.Client(api_key=api_key)
+        base_url = os.environ.get("LLM_BASE_URL", "http://localhost:11434/v1")
+        # Local runtimes ignore the key, but the SDK insists on a non-empty one.
+        api_key = os.environ.get("LLM_API_KEY") or "not-needed"
+        _client = OpenAI(base_url=base_url, api_key=api_key)
     return _client
+
+
+def _is_retryable(exc: Exception) -> bool:
+    if isinstance(exc, (RateLimitError, APIConnectionError)):
+        return True
+    return getattr(exc, "status_code", None) in RETRYABLE_STATUS_CODES
 
 
 def _was_truncated(response) -> bool:
     """True if the reply stopped because it ran out of output budget."""
-    candidates = getattr(response, "candidates", None) or []
-    if not candidates:
-        return False
-    reason = getattr(candidates[0], "finish_reason", None)
-    return reason is not None and getattr(reason, "name", str(reason)) == "MAX_TOKENS"
+    choices = getattr(response, "choices", None) or []
+    return bool(choices) and getattr(choices[0], "finish_reason", None) == "length"
 
 
 def _generate(model: str, system: str, user: str, max_tokens: int):
     """Call the model, retrying transient failures with exponential backoff."""
     for attempt in range(MAX_ATTEMPTS):
         try:
-            return _get_client().models.generate_content(
+            return _get_client().chat.completions.create(
                 model=model,
-                contents=user,
-                config=types.GenerateContentConfig(
-                    system_instruction=system,
-                    max_output_tokens=max_tokens,
-                    response_mime_type="application/json",
-                ),
+                max_tokens=max_tokens,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
             )
-        except errors.APIError as exc:
-            status = getattr(exc, "code", None)
-            if status not in RETRYABLE_STATUS_CODES or attempt == MAX_ATTEMPTS - 1:
+        except (RateLimitError, APIConnectionError, APIStatusError) as exc:
+            if not _is_retryable(exc) or attempt == MAX_ATTEMPTS - 1:
                 raise LLMUnavailableError(
-                    f"Gemini call failed after {attempt + 1} attempt(s): {exc}"
+                    f"LLM call failed after {attempt + 1} attempt(s): {exc}"
                 ) from exc
             time.sleep(2 ** (attempt + 1) + random.uniform(0, 1))
 
 
-def call_json(system: str, user: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> dict[str, Any]:
+def call_json(system: str, user: str, max_tokens: Optional[int] = None) -> dict[str, Any]:
     """Call the model and parse its reply as JSON.
 
     `system` must instruct the model to reply with JSON only, no prose.
@@ -83,7 +79,12 @@ def call_json(system: str, user: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> d
     Raises LLMUnavailableError if the API could not be reached or the reply was
     cut off, ValueError if it replied with something that isn't JSON.
     """
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+    model = os.environ.get("LLM_MODEL", "llama3.1:8b")
+    if max_tokens is None:
+        # Reasoning models spend thinking tokens out of this same budget, so it
+        # needs headroom well above the size of the JSON itself.
+        max_tokens = int(os.environ.get("LLM_MAX_TOKENS", "4096"))
+
     response = _generate(model, system, user, max_tokens)
 
     # A truncated reply is a budget problem, not a malformed one: surfacing it as
@@ -91,10 +92,11 @@ def call_json(system: str, user: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> d
     if _was_truncated(response):
         raise LLMUnavailableError(
             f"reply hit the {max_tokens}-token output budget before completing "
-            "(thinking tokens share this budget -- raise GEMINI_MAX_TOKENS)"
+            "(raise LLM_MAX_TOKENS)"
         )
 
-    text = response.text or ""
+    choices = getattr(response, "choices", None) or []
+    text = (choices[0].message.content or "") if choices else ""
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:

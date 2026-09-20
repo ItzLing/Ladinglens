@@ -18,14 +18,20 @@ Requires Python 3.14.
 python -m venv .venv
 .venv/Scripts/activate        # Windows; use `source .venv/bin/activate` on macOS/Linux
 pip install -r requirements.txt
-cp .env.example .env          # then fill in GEMINI_API_KEY
+cp .env.example .env          # then pick an LLM provider block (see below)
 ```
 
-`GEMINI_API_KEY` is free via [Google AI Studio](https://aistudio.google.com/apikey) (no
-billing required). The default model is `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
-Mind the free tier's rate limits -- a full `/run` over the 520-email dataset makes one
-classify call per email plus one extract call per `BL_COMPARISON` email, so expect the run
-to take a while as backoff paces it.
+The pipeline talks to any **OpenAI-compatible** endpoint, so the provider is a `.env`
+setting (`LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL`), not a code change. `.env.example`
+carries ready-made blocks for each:
+
+- **Ollama** (default) -- local, no key, no quota. Install from [ollama.com](https://ollama.com),
+  then `ollama pull llama3.1:8b`. Best for iterating, since a full run costs nothing.
+- **Groq** or **Gemini** -- hosted free tiers, stronger models, but daily request caps.
+
+A full `/run` over the 520-email dataset makes one classify call per email plus two extract
+calls per `BL_COMPARISON` email -- upwards of 1,000 calls, which can exceed a hosted free
+tier in a single run. Expect it to take a while either way.
 
 ## Running the pipeline
 
@@ -63,7 +69,7 @@ and scoring details.
 ```
 app/
   schema.py            # EmailCategory, ShipmentFields, ComparisonResult
-  llm_client.py         # Google Gemini SDK wrapper for JSON-only structured calls
+  llm_client.py         # OpenAI-compatible client for JSON-only structured calls
   main.py                # FastAPI app, POST /run
   pipeline/
     classify.py          # stage 1: email -> category (+ confidence)
