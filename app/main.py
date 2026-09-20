@@ -4,8 +4,10 @@ import os
 import sys
 from pathlib import Path
 
+from typing import Optional
+
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "data"
@@ -21,20 +23,25 @@ app = FastAPI(title="Ladinglens")
 
 
 @app.post("/run")
-def run():
-    """Run the full pipeline, writing output.json and classify_cache.json.
+def run(limit: Optional[int] = Query(None, gt=0, description="Process only the first N emails")):
+    """Run the pipeline, writing output.json and classify_cache.json.
 
     Reads INBOX_SOURCE from the environment: a local folder (defaults to
     data/) or an http(s) URL if using the hackathon's Docker dataset server.
+
+    `limit` processes a subset, for iterating on prompts without spending a
+    full run's quota. Those results land in output.sample.json instead, so a
+    partial run can never overwrite a full baseline.
     """
     source = os.environ.get("INBOX_SOURCE", str(DATA_DIR))
     inbox = Inbox(source)
-    submission, classify_records = run_pipeline(inbox)
+    submission, classify_records = run_pipeline(inbox, limit=limit)
 
-    output_path = ROOT_DIR / "output.json"
+    suffix = ".sample" if limit else ""
+    output_path = ROOT_DIR / f"output{suffix}.json"
     output_path.write_text(json.dumps(submission, indent=2))
 
-    cache_path = ROOT_DIR / "classify_cache.json"
+    cache_path = ROOT_DIR / f"classify_cache{suffix}.json"
     cache_path.write_text(json.dumps(classify_records, indent=2))
 
     return {

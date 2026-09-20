@@ -351,3 +351,45 @@ delete prior entries. See `AGENT.md` for the full protocol.
   keeps the whole threshold range sweepable from `classify_cache.json`.
 - Local models may not honor `response_format={"type": "json_object"}` as reliably as the
   hosted ones; if that shows up, the fallback is to strip code fences before `json.loads`.
+
+---
+
+## 2026-09-20 — Claude Code (limit param for cheap iteration)
+
+**What changed:**
+- `POST /run?limit=N` processes only the first N emails. `run_pipeline(inbox, limit=None)`
+  now slices `inbox.emails()` rather than iterating the inbox directly.
+- Limited runs write `output.sample.json` / `classify_cache.sample.json`; only a full run
+  writes `output.json` / `classify_cache.json`.
+- `.gitignore` widened to `output*.json` / `classify_cache*.json`.
+
+**Why:**
+- Every prompt tweak previously cost a full 520-email run (1,000+ LLM calls: one classify per
+  email plus two extracts per `BL_COMPARISON`). On a metered provider that is unaffordable to
+  repeat, and it was the main thing making prompt iteration expensive on *any* provider.
+- Separate filenames exist so a 20-email sanity run can't silently clobber a full baseline
+  that cost real quota -- and so `score_cli.py` is never accidentally pointed at a partial
+  submission, which would score 20 predictions against 520 ground-truth rows.
+
+**Decisions made:**
+- Chose the `limit` param over building dual-provider fallback (the other candidate). Cheap
+  iteration helps on every provider; fallback only helps when quota runs out, and risks
+  silently mixing model quality within one run, which would corrupt the baseline being
+  measured. Revisit fallback only if quota actually bites mid-run.
+- `limit` validated as `gt=0`, so `?limit=0` and negatives are rejected with HTTP 422 rather
+  than silently producing an empty submission.
+
+**Verification:**
+- Slicing checked at `limit` = None / 1 / 5 / larger-than-inbox, and for order preservation;
+  endpoint checked for sample-vs-full file routing and 422 on invalid input; the 8 routing
+  and 7 client checks still pass.
+
+**Open questions / next steps:**
+- **The last full run produced 520 identical `processing_error` entries** -- Ollama was
+  running but no model had been pulled (`404 model 'llama3.1:8b' not found`, non-retryable,
+  so every email failed instantly). `output.json` is currently unusable. Either
+  `ollama pull llama3.1:8b` or switch `.env` to the Groq block, then re-run.
+- Frontend work is blocked on a real run. Note that `output.json` alone cannot drive the
+  side-by-side SI/BL view the brief requires: `to_submission()` drops
+  `ComparisonResult.mismatches`, which holds the actual per-field SI and BL values. A
+  `report.json` carrying the full result (plus subject/sender) is needed first.

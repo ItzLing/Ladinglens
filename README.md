@@ -45,6 +45,16 @@ Then, with the dataset in place (see below):
 curl -X POST http://localhost:8000/run
 ```
 
+While iterating on prompts, run a subset instead -- a full run is 1,000+ LLM calls,
+which is a lot to spend on a one-line prompt tweak:
+
+```bash
+curl -X POST "http://localhost:8000/run?limit=20"
+```
+
+Limited runs write to `output.sample.json` / `classify_cache.sample.json`, so they
+can't overwrite a full baseline.
+
 This writes `output.json` at the repo root: one JSON object keyed by `email_id`,
 matching the shape of `data/sample_submission.json`, ready for the hackathon's
 self-evaluation endpoint.

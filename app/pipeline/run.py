@@ -2,6 +2,8 @@
 
 needs_review is set explicitly at every branch below, never guessed away.
 """
+from typing import Optional
+
 from app.llm_client import LLMUnavailableError
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
@@ -118,16 +120,20 @@ def process_email(email: dict, inbox) -> ComparisonResult:
     )
 
 
-def run_pipeline(inbox) -> tuple[dict, dict]:
-    """Process every email in the inbox.
+def run_pipeline(inbox, limit: Optional[int] = None) -> tuple[dict, dict]:
+    """Process the inbox, or only its first `limit` emails.
 
     Returns (submission, classify_records). classify_records pairs each email's
     raw self-reported confidence with its computed verdict, so the confidence
     threshold can be re-swept offline instead of re-spending API quota.
     """
+    emails = inbox.emails()
+    if limit is not None:
+        emails = emails[:limit]
+
     submission = {}
     classify_records = {}
-    for email in inbox:
+    for email in emails:
         result = process_email(email, inbox)
         entry = result.to_submission()
         submission[result.email_id] = entry

@@ -232,6 +232,6 @@ data/data_v2/
 data/server/
 data/docker-compose.yml
 
-# pipeline run artifacts
-output.json
-classify_cache.json
+# pipeline run artifacts (including *.sample.json from limited runs)
+output*.json
+classify_cache*.json
