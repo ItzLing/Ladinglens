@@ -18,6 +18,8 @@ class ReviewReason(str, Enum):
     MISSING_ATTACHMENT = "missing_attachment"
     UNREADABLE = "unreadable"
     MISSING_VALUE = "missing_value"
+    LOW_CONFIDENCE = "low_confidence"
+    PROCESSING_ERROR = "processing_error"
 
 
 class ShipmentFields(BaseModel):
@@ -33,6 +35,9 @@ class ShipmentFields(BaseModel):
 class ComparisonResult(BaseModel):
     email_id: str
     category: EmailCategory
+    # Internal only, deliberately absent from to_submission(): retained so the
+    # confidence threshold can be re-swept offline against a cached run.
+    confidence: Optional[float] = None
     mismatch_found: bool = False
     mismatches: dict[str, dict[str, Optional[str]]] = {}
     needs_review: bool = False

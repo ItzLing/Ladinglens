@@ -22,9 +22,10 @@ cp .env.example .env          # then fill in GEMINI_API_KEY
 ```
 
 `GEMINI_API_KEY` is free via [Google AI Studio](https://aistudio.google.com/apikey) (no
-billing required). Note the free tier's rate limits (roughly 30 requests/min, ~1,500/day on
-`gemini-2.5-flash`) -- a full `/run` over the 520-email dataset makes one classify call per
-email plus one extract call per `BL_COMPARISON` email, which may approach those limits.
+billing required). The default model is `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
+Mind the free tier's rate limits -- a full `/run` over the 520-email dataset makes one
+classify call per email plus one extract call per `BL_COMPARISON` email, so expect the run
+to take a while as backoff paces it.
 
 ## Running the pipeline
 

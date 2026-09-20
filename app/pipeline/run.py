@@ -2,12 +2,13 @@
 
 needs_review is set explicitly at every branch below, never guessed away.
 """
+from app.llm_client import LLMUnavailableError
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
 from app.pipeline.extract import extract_fields
 from app.schema import ComparisonResult, EmailCategory, ReviewReason
 
-CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.6
+CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.2
 
 
 def _is_text_attachment(path: str) -> bool:
@@ -22,17 +23,32 @@ def process_email(email: dict, inbox) -> ComparisonResult:
     `inbox` is a data/loader.py Inbox instance, used to fetch attachment text.
     """
     email_id = email["email_id"]
-    category, confidence = classify_email(email)
+
+    try:
+        category, confidence = classify_email(email)
+    except (LLMUnavailableError, ValueError, KeyError):
+        # The model never returned a usable category. Report the neutral bucket
+        # so the submission stays well-formed, but flag it so the score isn't
+        # read as a real classification.
+        return ComparisonResult(
+            email_id=email_id,
+            category=EmailCategory.GENERAL,
+            needs_review=True,
+            review_reason=ReviewReason.PROCESSING_ERROR,
+        )
 
     if category != EmailCategory.BL_COMPARISON:
-        return ComparisonResult(email_id=email_id, category=category)
+        return ComparisonResult(
+            email_id=email_id, category=category, confidence=confidence
+        )
 
     if confidence < CLASSIFICATION_CONFIDENCE_THRESHOLD:
         return ComparisonResult(
             email_id=email_id,
             category=category,
+            confidence=confidence,
             needs_review=True,
-            review_reason=ReviewReason.UNREADABLE,
+            review_reason=ReviewReason.LOW_CONFIDENCE,
         )
 
     attachments = email.get("attachments", [])
@@ -43,6 +59,7 @@ def process_email(email: dict, inbox) -> ComparisonResult:
         return ComparisonResult(
             email_id=email_id,
             category=category,
+            confidence=confidence,
             needs_review=True,
             review_reason=ReviewReason.MISSING_ATTACHMENT,
         )
@@ -53,6 +70,7 @@ def process_email(email: dict, inbox) -> ComparisonResult:
         return ComparisonResult(
             email_id=email_id,
             category=category,
+            confidence=confidence,
             needs_review=True,
             review_reason=ReviewReason.UNREADABLE,
         )
@@ -60,10 +78,21 @@ def process_email(email: dict, inbox) -> ComparisonResult:
     try:
         si_fields = extract_fields(inbox.read_text(si_path))
         bl_fields = extract_fields(inbox.read_text(bl_path))
-    except Exception:
+    except LLMUnavailableError:
+        # An API failure says nothing about the document -- keep it out of the
+        # unreadable bucket so rate limits don't masquerade as real verdicts.
         return ComparisonResult(
             email_id=email_id,
             category=category,
+            confidence=confidence,
+            needs_review=True,
+            review_reason=ReviewReason.PROCESSING_ERROR,
+        )
+    except (ValueError, OSError):
+        return ComparisonResult(
+            email_id=email_id,
+            category=category,
+            confidence=confidence,
             needs_review=True,
             review_reason=ReviewReason.UNREADABLE,
         )
@@ -74,6 +103,7 @@ def process_email(email: dict, inbox) -> ComparisonResult:
         return ComparisonResult(
             email_id=email_id,
             category=category,
+            confidence=confidence,
             needs_review=True,
             review_reason=ReviewReason.MISSING_VALUE,
         )
@@ -82,15 +112,24 @@ def process_email(email: dict, inbox) -> ComparisonResult:
     return ComparisonResult(
         email_id=email_id,
         category=category,
+        confidence=confidence,
         mismatch_found=bool(mismatches),
         mismatches=mismatches,
     )
 
 
-def run_pipeline(inbox) -> dict:
-    """Process every email in the inbox, return the submission dict."""
+def run_pipeline(inbox) -> tuple[dict, dict]:
+    """Process every email in the inbox.
+
+    Returns (submission, classify_records). classify_records pairs each email's
+    raw self-reported confidence with its computed verdict, so the confidence
+    threshold can be re-swept offline instead of re-spending API quota.
+    """
     submission = {}
+    classify_records = {}
     for email in inbox:
         result = process_email(email, inbox)
-        submission[result.email_id] = result.to_submission()
-    return submission
+        entry = result.to_submission()
+        submission[result.email_id] = entry
+        classify_records[result.email_id] = {"confidence": result.confidence, **entry}
+    return submission, classify_records
