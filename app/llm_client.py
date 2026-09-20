@@ -57,6 +57,12 @@ def _generate(model: str, system: str, user: str, max_tokens: int):
             return _get_client().chat.completions.create(
                 model=model,
                 max_tokens=max_tokens,
+                # Extraction is a reading task, not a creative one. At the
+                # default sampling temperature the same document yields
+                # different field values between runs -- when the SI and BL
+                # happen to disagree, compare.py reports a discrepancy that
+                # isn't in the documents.
+                temperature=0,
                 response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": system},
