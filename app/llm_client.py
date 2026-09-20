@@ -1,22 +1,23 @@
-"""Thin Anthropic SDK wrapper for JSON-only structured calls."""
+"""Thin Google Gen AI (Gemini) SDK wrapper for JSON-only structured calls."""
 import json
 import os
 from typing import Any, Optional
 
-from anthropic import Anthropic
+from google import genai
+from google.genai import types
 
-_client: Optional[Anthropic] = None
+_client: Optional[genai.Client] = None
 
 
-def _get_client() -> Anthropic:
+def _get_client() -> genai.Client:
     global _client
     if _client is None:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError(
-                "ANTHROPIC_API_KEY is not set. Add it to .env before running the pipeline."
+                "GEMINI_API_KEY is not set. Add it to .env before running the pipeline."
             )
-        _client = Anthropic(api_key=api_key)
+        _client = genai.Client(api_key=api_key)
     return _client
 
 
@@ -25,14 +26,17 @@ def call_json(system: str, user: str, max_tokens: int = 1024) -> dict[str, Any]:
 
     `system` must instruct the model to reply with JSON only, no prose.
     """
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
-    response = _get_client().messages.create(
+    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    response = _get_client().models.generate_content(
         model=model,
-        max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+        contents=user,
+        config=types.GenerateContentConfig(
+            system_instruction=system,
+            max_output_tokens=max_tokens,
+            response_mime_type="application/json",
+        ),
     )
-    text = "".join(block.text for block in response.content if block.type == "text")
+    text = response.text or ""
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:

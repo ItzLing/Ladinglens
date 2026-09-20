@@ -18,8 +18,13 @@ Requires Python 3.14.
 python -m venv .venv
 .venv/Scripts/activate        # Windows; use `source .venv/bin/activate` on macOS/Linux
 pip install -r requirements.txt
-cp .env.example .env          # then fill in ANTHROPIC_API_KEY
+cp .env.example .env          # then fill in GEMINI_API_KEY
 ```
+
+`GEMINI_API_KEY` is free via [Google AI Studio](https://aistudio.google.com/apikey) (no
+billing required). Note the free tier's rate limits (roughly 30 requests/min, ~1,500/day on
+`gemini-2.5-flash`) -- a full `/run` over the 520-email dataset makes one classify call per
+email plus one extract call per `BL_COMPARISON` email, which may approach those limits.
 
 ## Running the pipeline
 
@@ -57,7 +62,7 @@ and scoring details.
 ```
 app/
   schema.py            # EmailCategory, ShipmentFields, ComparisonResult
-  llm_client.py         # Anthropic SDK wrapper for JSON-only structured calls
+  llm_client.py         # Google Gemini SDK wrapper for JSON-only structured calls
   main.py                # FastAPI app, POST /run
   pipeline/
     classify.py          # stage 1: email -> category (+ confidence)

@@ -120,3 +120,46 @@ delete prior entries. See `AGENT.md` for the full protocol.
   check before wiring up the self-eval endpoint.
 
 **Synced through:** `3592d1f` (no new commit made this session -- scaffold left uncommitted for review)
+
+---
+
+## 2026-09-20 — Claude Code (LLM provider swap)
+
+**What changed:**
+- Swapped `app/llm_client.py` from the Anthropic SDK to Google Gemini's `google-genai` SDK,
+  keeping `call_json(system, user, max_tokens=1024) -> dict[str, Any]`'s exact signature and
+  error-raising behavior, so `app/pipeline/classify.py` and `app/pipeline/extract.py` needed
+  zero changes.
+- Updated `requirements.txt` (`anthropic` -> `google-genai`), `.env.example`
+  (`ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` -> `GEMINI_API_KEY`/`GEMINI_MODEL`), and `README.md`
+  (setup instructions + project-layout comment).
+
+**Why:**
+- No `ANTHROPIC_API_KEY` had ever been set up (see prior entry), and the Anthropic API isn't
+  free, so the pipeline had never run end-to-end. Gemini's free tier (Google AI Studio, no
+  billing) removes that blocker. Gemini was chosen over Groq/OpenRouter/Ollama alternatives
+  because it also supports vision input, keeping the door open for the still-unbuilt
+  OCR/scanned-document advanced-stage goal without committing to it now.
+
+**Decisions made:**
+- Used the current `google-genai` SDK (`from google import genai`), not the deprecated
+  `google-generativeai` package.
+- Defaulted to `GEMINI_MODEL=gemini-2.5-flash` (confirmed free-tier-eligible and multimodal)
+  over the floating `gemini-flash-latest` alias, for reproducibility.
+- Used provider-level JSON mode (`response_mime_type="application/json"` on
+  `GenerateContentConfig`) without a `response_schema`, keeping `call_json`'s existing
+  "ask for JSON via prompt, parse whatever text comes back" contract unchanged rather than
+  moving to schema-validated output.
+- Guarded `response.text` with `or ""` before `json.loads`, since it can be `None` on a
+  blocked/empty response -- falls into the existing `ValueError` path instead of crashing.
+
+**Open questions / next steps:**
+- No retry/backoff for free-tier rate limits (roughly 30 RPM / ~1,500 RPD on
+  `gemini-2.5-flash`) -- a full 520-email `/run` may approach these; still unimplemented.
+- Pipeline still has never actually been run end-to-end -- next session should add a real
+  `GEMINI_API_KEY` to `.env`, run `POST /run`, and ideally submit `output.json` to the
+  hackathon's self-evaluation endpoint for a baseline score.
+- Vision/OCR path is still unbuilt, deferred per original scope -- Gemini's multimodal support
+  just keeps that option open for later.
+
+**Synced through:** `8590ee3` (no new commit made this session -- Gemini swap left uncommitted for review)
