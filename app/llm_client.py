@@ -34,7 +34,15 @@ def _get_client() -> OpenAI:
         base_url = os.environ.get("LLM_BASE_URL", "http://localhost:11434/v1")
         # Local runtimes ignore the key, but the SDK insists on a non-empty one.
         api_key = os.environ.get("LLM_API_KEY") or "not-needed"
-        _client = OpenAI(base_url=base_url, api_key=api_key)
+        _client = OpenAI(
+            base_url=base_url,
+            api_key=api_key,
+            # The SDK defaults to a 600s timeout and its own retries. Stacked
+            # under our backoff, one hung call could stall a run for the better
+            # part of an hour. Retries belong to _generate(), not the SDK.
+            timeout=float(os.environ.get("LLM_TIMEOUT", "60")),
+            max_retries=0,
+        )
     return _client
 
 

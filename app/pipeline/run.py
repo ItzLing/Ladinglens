@@ -2,6 +2,9 @@
 
 needs_review is set explicitly at every branch below, never guessed away.
 """
+import json
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 from app.llm_client import LLMUnavailableError
@@ -120,22 +123,132 @@ def process_email(email: dict, inbox) -> ComparisonResult:
     )
 
 
-def run_pipeline(inbox, limit: Optional[int] = None) -> tuple[dict, dict]:
+SUBMISSION_KEYS = ("category", "status", "review_reason", "defect_fields", "has_defect")
+
+
+def _failed(record: dict) -> bool:
+    return record.get("review_reason") == ReviewReason.PROCESSING_ERROR.value
+
+
+def _better_failure(prior: Optional[dict], new: dict) -> dict:
+    """Pick whichever failed attempt still knows the most.
+
+    A failure after a successful classification keeps the real category; one
+    where classification itself failed only has the GENERAL fallback. Retrying
+    while the API is down must not trade the former for the latter.
+    """
+    if prior is None:
+        return new
+    if prior["category"] != EmailCategory.GENERAL.value:
+        if new["category"] == EmailCategory.GENERAL.value:
+            return prior
+    return new
+
+
+def _load_checkpoint(path) -> tuple[dict, dict]:
+    """Read a checkpoint file, split into (succeeded, failed) by email_id.
+
+    Failures are kept separate so resuming retries them rather than banking an
+    API outage as a verdict -- but they're still returned, so a retry that also
+    fails can fall back to what the earlier attempt knew.
+    """
+    if path is None or not path.exists():
+        return {}, {}
+    done: dict = {}
+    failed: dict = {}
+    for line in path.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue  # a run killed mid-write can leave one torn line
+        email_id = record["email_id"]
+        if _failed(record):
+            failed[email_id] = _better_failure(failed.get(email_id), record)
+        else:
+            done[email_id] = record
+            failed.pop(email_id, None)
+    return done, failed
+
+
+def _record(result) -> dict:
+    """Flatten a result into one checkpoint line.
+
+    Carries `mismatches` (the per-field SI/BL values) alongside the submission
+    fields, since to_submission() drops them and the review UI needs them.
+    """
+    return {
+        "email_id": result.email_id,
+        "confidence": result.confidence,
+        "mismatches": result.mismatches,
+        **result.to_submission(),
+    }
+
+
+def run_pipeline(
+    inbox,
+    limit: Optional[int] = None,
+    checkpoint_path=None,
+    resume: bool = False,
+    concurrency: Optional[int] = None,
+) -> tuple[dict, dict]:
     """Process the inbox, or only its first `limit` emails.
+
+    Each result is appended to `checkpoint_path` as it completes, so a run that
+    dies partway can be continued with resume=True instead of restarting. Work
+    is spread over a thread pool because the pipeline is I/O-bound on API calls,
+    not CPU-bound.
 
     Returns (submission, classify_records). classify_records pairs each email's
     raw self-reported confidence with its computed verdict, so the confidence
     threshold can be re-swept offline instead of re-spending API quota.
     """
+    if concurrency is None:
+        concurrency = int(os.environ.get("LLM_CONCURRENCY", "8"))
+
     emails = inbox.emails()
     if limit is not None:
         emails = emails[:limit]
 
+    done, failed = _load_checkpoint(checkpoint_path) if resume else ({}, {})
+    if checkpoint_path is not None and not resume:
+        checkpoint_path.write_text("")
+
+    todo = [e for e in emails if e["email_id"] not in done]
+
+    def work(email: dict) -> dict:
+        try:
+            return _record(process_email(email, inbox))
+        except Exception:
+            # One unexpected failure must not take the whole batch down with it.
+            return _record(
+                ComparisonResult(
+                    email_id=email["email_id"],
+                    category=EmailCategory.GENERAL,
+                    needs_review=True,
+                    review_reason=ReviewReason.PROCESSING_ERROR,
+                )
+            )
+
+    if todo:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            futures = [pool.submit(work, email) for email in todo]
+            # as_completed yields in this thread, so appends stay serialized.
+            for future in as_completed(futures):
+                record = future.result()
+                if _failed(record):
+                    record = _better_failure(failed.get(record["email_id"]), record)
+                done[record["email_id"]] = record
+                if checkpoint_path is not None:
+                    with checkpoint_path.open("a") as fh:
+                        fh.write(json.dumps(record) + "\n")
+
     submission = {}
     classify_records = {}
-    for email in emails:
-        result = process_email(email, inbox)
-        entry = result.to_submission()
-        submission[result.email_id] = entry
-        classify_records[result.email_id] = {"confidence": result.confidence, **entry}
+    for email in emails:  # restore input order, which completion order loses
+        record = done[email["email_id"]]
+        entry = {key: record[key] for key in SUBMISSION_KEYS}
+        submission[email["email_id"]] = entry
+        classify_records[email["email_id"]] = {"confidence": record["confidence"], **entry}
     return submission, classify_records

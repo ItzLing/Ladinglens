@@ -393,3 +393,52 @@ delete prior entries. See `AGENT.md` for the full protocol.
   side-by-side SI/BL view the brief requires: `to_submission()` drops
   `ComparisonResult.mismatches`, which holds the actual per-field SI and BL values. A
   `report.json` carrying the full result (plus subject/sender) is needed first.
+
+---
+
+## 2026-09-21 — Claude Code (first real baseline: 0.4037)
+
+**What changed:**
+- `llm_client.py`: `timeout=60` (env `LLM_TIMEOUT`) and `max_retries=0` on the client.
+- `run.py`: thread-pool concurrency (`LLM_CONCURRENCY`, default 8) and JSONL checkpointing;
+  each result appends to `results.jsonl` as it completes. `POST /run?resume=true` continues.
+- `run.py`: checkpoint splits into succeeded/failed. Failures are retried on resume, but a
+  retry that *also* fails can't downgrade what the earlier attempt knew.
+- `.gitignore`: `results*.jsonl`.
+
+**FIRST REAL SCORE: 0.4037** (`stage1 macro-F1 0.707` · `stage3 defect-F1 0.432` ·
+`end-to-end 0.196`; weights s1=0.3, s3=0.2, **e2e=0.5**).
+
+**Why / what was learned:**
+- **The SDK's default 600s timeout was the stall.** An 80-minute run produced nothing: one
+  hung call blocks for 10 minutes, and our 5 retries stacked on the SDK's own retries.
+- **Free-tier token caps, not request caps, are the binding constraint.** Groq
+  `gpt-oss-120b` allows **200k tokens/day**; a full run needs ~1M. `gpt-oss-20b` and
+  `qwen/qwen3.8-27b` allow 8k tokens/min and 1000 requests/day -- a run needs ~936 calls.
+- **Reasoning models are the reason.** `gpt-oss-120b` and `gemini-3.6-flash` spend ~800-1000
+  *thinking* tokens per call. `gemini-3.1-flash-lite` spends ~10 completion tokens and still
+  classifies correctly, extracts 7/7 fields, and resolves "Load Port" -> `port_of_loading`.
+  Picking a non-reasoning model is worth more than any prompt tuning here.
+- **`temperature` was unset**, so extraction was non-deterministic and invented mismatches
+  (observed once in five runs on `email_001`). Now pinned to 0.
+- **uvicorn `--reload` watches `.py`, not `.env`.** A provider switch looked like a total
+  failure because the server held the dead config in memory. Touch a `.py` file after
+  editing `.env`.
+
+**Decisions made:**
+- Threads over asyncio for concurrency: the work is I/O-bound and `process_email` stays
+  synchronous, so no rewrite of the pipeline stages was needed.
+- `resume` defaults to **off**, so a prompt change never silently reuses stale verdicts.
+
+**Open questions / next steps:**
+- **Both providers' quotas are exhausted as of 2026-09-21 01:15.** Blocked until they reset,
+  or until Ollama has a model pulled (`ollama pull llama3.1:8b`) -- local is the only
+  uncapped path and the only way to iterate freely.
+- **157 of 520 emails are `processing_error`** in the current `output.json` -- pure
+  infrastructure loss. They drag `BL_COMPARISON` recall to **0.46** (precision is a perfect
+  1.00), and an email not routed to comparison can never have its defect caught. Retrying
+  those is the single biggest available win; `?resume=true` now does exactly that.
+- After that, the real accuracy target is **defect recall 0.326** (precision 0.833) -- we
+  miss two thirds of genuine discrepancies. Investigate against `ground_truth.json`.
+- A retry attempt at 00:28 failed on quota and *regressed* output 102 -> 69 BL_COMPARISON.
+  Restored from `results.jsonl.bak`; the `_better_failure` guard now prevents a repeat.
