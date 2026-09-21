@@ -1092,3 +1092,100 @@ emails caught.
   common in a full run, revisit the delay.
 
 **Synced through:** `a6f0a5d` (the merge `62f827b`, then the fixes `be619b2` and `a6f0a5d`)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (Report tab, dashboard, Review, run controls, three merges)
+
+**What changed:**
+- **Report tab built** (`web/js/views/report.js`), from the owner's old single-page dashboard: four
+  headline numbers, the escalation note, an Inbox mix card (three insights and one bar per label),
+  and the emails **folded by label** (closed by default, 25 rows at a time, "Show more") so 520
+  emails do not make a 520-row page. Full width. Each row has a priority and a one-line next step
+  and opens the email in Parsing. Result pills with counts, search, **Copy summary** and **Export
+  CSV** (exports what is currently shown). The logic is pure and unit-tested in `web/js/store.js`
+  (`reportTiles`, `reportInsights`, `escalationNote`, `priorityOf`, `nextStep`, `sortByPriority`,
+  `rowsToCsv`, `reportGroups`, `statusCounts`, `summaryText`, `runPlan`).
+- **Home is now ZuYenn's dashboard** (hero, five tiles, Inbox mix, searchable review queue); on
+  top of it, the queue got a **Priority** and a **Next step** column and is ordered by priority.
+  A saved theme is applied by an inline script in `web/index.html` before first paint, so a dark
+  page no longer flashes light.
+- **Review tab** (ZuYenn's UI, corrections kept in `localStorage`): added a **demo delegation**
+  box that Colt asked for. Type a name, press Send, and the case moves to a **Delegated** tab with
+  a "Delegated to {name}" chip; Take back returns it. Nothing is sent anywhere; it is kept in the
+  browser (`ladinglens-review-delegations-v1`). Also a Retry button for failed cases, and an
+  empty pane that says failures on the model API are usually a quota problem.
+- **Parsing and Review share one scaffold**, `web/js/components/casepane.js` (the two panes,
+  opening an email, loading its case, `j`/`k`, the original email and documents, Retry). Each view
+  keeps only its own part. They link to each other for the same email. "Needs a person" is one
+  rule, `needsPerson` in `store.js`, used by Review's queue, the Parsing link and the Home queue.
+- **Run controls.** `POST /api/run/stop` and a **Stop** button: emails in flight finish and are
+  saved, the rest are left alone, and a stopped run does **not** rewrite `output.json` (a partial
+  run must never replace a full one). `/api/status` reports `stopping`. `POST /run?new_only=true`
+  (**Run N new**) processes only emails with no saved result and leaves every saved one, failed
+  ones included, alone, so adding emails to the inbox does not re-run the old ones. **Retry N**
+  is `resume=true` (retries failures, does new emails). **Start over** is a fresh run.
+- **Backup before a fresh run.** A fresh run replaces `results.jsonl`, so it now first copies it
+  to `results.jsonl.<timestamp>.bak`, but only if it holds at least one real verdict, so a run of
+  failures never pushes a good backup out. The Start over confirmation now says it replaces the
+  saved results and that a backup is kept; the run bar reports where the backup went.
+- **Merges** (all into `ling-2`/`Ling`): `feat/colt` (compare tuning: a party field also matches
+  when one side is the other plus an address, `scripts/recompare.py`); `ZuYenn` (the dashboard
+  redesign and the Review tab, above); `main` (Dockerfile, `.dockerignore`, the dataset-free
+  `POST /process`, `ocr_cache/` ignored).
+- Tests: 144 Python and 54 JavaScript, all passing. `DESIGN.md`, `README.md` and
+  `results/README.md` updated to match.
+
+**Why:**
+- The owner wanted the dashboard as the main page, the Report tab filled in, and a way to stop a
+  run. Colt asked for delegation on emails that need a person. The backup and new-only mode came
+  from a real risk: the Run button used to delete saved results before spending any quota.
+
+**Findings:**
+- **Every run currently fails, and it is the model quota, not the code.** A direct call returned
+  Gemini **HTTP 429, "exceeded your current quota"** (free tier, limit 20 requests for
+  the configured Gemini model). All 268 records in `results/results.jsonl` are `processing_error` at
+  classification, so nothing has actually been checked. `output.json` was never written because
+  no run completed.
+- Viewing (Home, Parsing, Review, Report, Database) only reads the saved records. Only Run, Run N
+  new, Retry and the per-email Retry call the model.
+
+**Decisions made:**
+- **`web/report.json` conflicted in every merge.** Colt regenerates it in the old flat format; the
+  app reads the new format. For his merge I converted his newer data to the new shape with a
+  throwaway script after proving it reproduces the existing file exactly from the old base; in
+  the other merges this branch's file was already the newer one and was kept. The script is not
+  committed. Alternative rejected: taking either side, which loses data or breaks the UI.
+- **ZuYenn's `web/index.html` conflict:** kept the modular app. His single-file page is a redesign
+  of the old dashboard; taking it would have replaced the app shell. It stays in `origin/ZuYenn`.
+  His `home.js` (the same design, built in the modular app) replaced my simpler Home.
+- **Parsing/Review duplication:** shared component, both tabs kept (over merging them into one
+  tab), to keep the owner's five-tab design.
+- **Stop is cooperative**, not thread-killing, so nothing is left half-written.
+- **`new_only` is separate from `resume`** because resume retries failures and the owner wanted
+  previous emails left alone.
+- Priority order (mismatch, then review, then clean) on Home and Report; Parsing and Review keep
+  the older order (failed, review, mismatch).
+
+**Open questions / next steps:**
+- **Fix the model quota** (wait for reset, change `LLM_MODEL`, or use another key), then use
+  **Run N new** or **Retry N**. Avoid **Start over** until then; it would replace the saved
+  results with more failures (a backup is kept only if they hold a real verdict).
+- Restart uvicorn after pulling; it picks up backend changes only with `--reload`.
+- `scripts/poll.py` still calls `resume=true`, so it retries failed emails every tick and spends
+  quota. Consider `new_only=true`.
+- The Home queue shows only the first 12 rows while its counter reads "520 of 520 emails"
+  (ZuYenn's design). Needs "Show more" and a correct counter.
+- `DESIGN.md` section 6.2 still describes the old Home.
+- `web/report.json` is the converted older 520-email snapshot (no summaries). Rebuild it with
+  `python web/build_report.py` after a real run; if someone regenerates it in the old format the
+  conflict will return.
+- Review corrections and delegations live only in the browser. Delegation is a demo; a real one
+  needs a backend and a notification.
+- A fresh run replaces the MongoDB copy too; the `.bak` file is the copy to restore from.
+- `HANDOFF.md` is well past the ~5-entry limit in `AGENT.md`; older entries should move to
+  `HANDOFF-archive.md` as a separate small commit.
+- An untracked `results.jsonl` sits at the repo root. It is not from this session; check it.
+
+**Synced through:** `543e006` (this entry is committed after it)
