@@ -44,6 +44,9 @@ Then, with the dataset in place (see below):
 ```bash
 curl -X POST http://localhost:8000/run
 ```
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://localhost:8000/run"
+```
 
 While iterating on prompts, run a subset instead -- a full run is 1,000+ LLM calls,
 which is a lot to spend on a one-line prompt tweak:
