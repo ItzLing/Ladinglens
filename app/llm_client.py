@@ -134,33 +134,36 @@ def vision_model_name() -> str:
     return os.environ.get("LLM_VISION_MODEL") or os.environ.get("LLM_MODEL", "llama3.1:8b")
 
 
-def call_vision_text(
+def call_vision_json(
     system: str,
     user: str,
     images: list[tuple[bytes, str]],
     max_tokens: Optional[int] = None,
-) -> str:
-    """Send images (bytes, mime type) with a prompt and return the plain-text reply.
+) -> dict[str, Any]:
+    """Send page images (bytes, mime type) with a prompt and parse the reply as JSON.
 
     Uses LLM_VISION_MODEL if set, since the text model may not accept images
     (a local llama3.1 doesn't); otherwise falls back to LLM_MODEL.
 
     Raises LLMUnavailableError if the API could not be reached, rejected the
-    images, or the reply was cut off.
+    images, or the reply was cut off, ValueError if the reply is not JSON.
     """
-    model = vision_model_name()
     content: list[dict[str, Any]] = [{"type": "text", "text": user}]
     for data, mime in images:
         encoded = base64.b64encode(data).decode("ascii")
         content.append(
             {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
         )
-    return _complete(
-        model,
+    text = _complete(
+        vision_model_name(),
         [
             {"role": "system", "content": system},
             {"role": "user", "content": content},
         ],
         max_tokens or _default_max_tokens(),
-        json_mode=False,
+        json_mode=True,
     )
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"model did not return valid JSON: {text!r}") from exc
