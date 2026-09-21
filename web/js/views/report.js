@@ -1,11 +1,14 @@
 import { add, h, clear } from "../util/dom.js";
 import { icon } from "../util/icons.js";
 import { CATEGORY_ORDER, FIELDS, categoryLabel, formatTime, plural } from "../util/format.js";
-import { STATUS_LABEL, escalationNote, reportGroups, reportTiles } from "../store.js";
+import {
+  PRIORITY_LABEL, STATUS_LABEL, escalationNote, nextStep, priorityOf, reportGroups, reportInsights, reportTiles, rowsToCsv, statusCounts, summaryText,
+} from "../store.js";
 import { routeHash } from "../router.js";
 import { statusChipEl } from "../components/chips.js";
 
 const PAGE = 25;
+const STATUS_ORDER = ["MISMATCH", "NEEDS_REVIEW", "OK"];
 const FIELD_LABEL = Object.fromEntries(FIELDS);
 
 /**
@@ -26,12 +29,10 @@ export function mountReport(root, ctx) {
   const count = h("span", { class: "muted count" });
   const list = h("div", { class: "folds" });
 
-  const status = h(
-    "select",
-    { class: "select", "aria-label": "Filter by status", onchange: (e) => { filters.status = e.target.value; renderList(); } },
-    h("option", { value: "" }, "All statuses"),
-    ...Object.entries(STATUS_LABEL).map(([value, label]) => h("option", { value }, label)),
-  );
+  const insights = h("div", { class: "insights" });
+  const pills = h("div", { class: "groups", role: "group", "aria-label": "Filter by result" });
+  const copyBtn = h("button", { class: "btn small", type: "button", onclick: copySummary }, "Copy summary");
+  const csvBtn = h("button", { class: "btn small", type: "button", onclick: exportCsv }, "Export CSV");
   const search = h("input", {
     class: "search", type: "search", placeholder: "Search subject, sender or email ID", "aria-label": "Search emails",
     oninput: (e) => { filters.q = e.target.value; renderList(); },
@@ -42,12 +43,13 @@ export function mountReport(root, ctx) {
       "div",
       { class: "page wide" },
       h("p", { class: "secondary" }, "Shipping Instruction vs. draft Bill of Lading discrepancy review. Every inbox email is classified; comparison requests have seven shipment fields extracted from both documents and diffed."),
-      h("p", { class: "stamp" }, stamp),
+      h("div", { class: "stamp" }, stamp, h("span", { class: "grow" }), copyBtn, csvBtn),
       tiles,
       banner,
-      h("section", { class: "card" }, h("h2", {}, "Emails by category"), h("p", { class: "secondary" }, "Only comparison requests continue to document checking."), bars),
+      h("section", { class: "card" }, h("h2", {}, "Inbox mix"), h("p", { class: "secondary" }, "Classification count by email category. Only comparison requests continue to document checking."), insights, bars),
       h("h2", { class: "list-title" }, "Emails"),
-      h("div", { class: "toolbar" }, status, search, count),
+      h("div", { class: "toolbar" }, search, count),
+      pills,
       list,
     ),
   );
@@ -58,6 +60,11 @@ export function mountReport(root, ctx) {
     clear(tiles).append(
       ...reportTiles(s).map((t) =>
         h("div", { class: "tile" }, h("div", { class: "tile-label" }, t.label), h("div", { class: "tile-value" }, t.value), h("div", { class: "tile-note" }, t.note))),
+    );
+
+    clear(insights).append(
+      ...reportInsights(s).map((i) =>
+        h("div", { class: "insight" }, h("span", {}, i.label), h("strong", {}, i.value), h("small", {}, i.note))),
     );
 
     const note = escalationNote(s);
@@ -84,8 +91,8 @@ export function mountReport(root, ctx) {
       "a",
       { class: "rrow", href: routeHash("parsing", r.email_id) },
       h("span", { class: "id" }, r.email_id.replace("email_", "#")),
-      h("span", { class: "subject" }, r.subject || "(no subject)"),
-      h("span", { class: "result" }, statusChipEl(r)),
+      h("span", { class: "subject" }, r.subject || "(no subject)", h("small", {}, nextStep(r))),
+      h("span", { class: "result" }, h("span", { class: `priority ${priorityOf(r)}` }, PRIORITY_LABEL[priorityOf(r)]), statusChipEl(r)),
       h("span", { class: "flagged" }, (r.defect_fields ?? []).map((f) => FIELD_LABEL[f] ?? f).join(", ")),
     );
 
@@ -121,8 +128,47 @@ export function mountReport(root, ctx) {
     return details;
   }
 
+  function renderPills(rows) {
+    const counts = statusCounts(rows, { q: filters.q });
+    clear(pills).append(
+      ...[["", "All"], ...STATUS_ORDER.map((k) => [k, STATUS_LABEL[k]])].map(([value, label]) =>
+        h("button", { class: "group", type: "button", "aria-pressed": String(filters.status === value), onclick: () => { filters.status = value; renderList(); } },
+          label, h("span", { class: "n" }, counts[value] ?? 0))),
+    );
+  }
+
+  function visibleRows() {
+    return reportGroups(ctx.getReport()?.emails ?? [], filters, CATEGORY_ORDER).flatMap((g) => g.items);
+  }
+
+  function flash(button, text) {
+    const label = button.textContent;
+    button.textContent = text;
+    setTimeout(() => { button.textContent = label; }, 1400);
+  }
+
+  async function copySummary() {
+    const text = summaryText(ctx.getReport());
+    try {
+      await navigator.clipboard.writeText(text);
+      flash(copyBtn, "Copied");
+    } catch {
+      flash(copyBtn, "Copy not allowed");
+    }
+  }
+
+  function exportCsv() {
+    const url = URL.createObjectURL(new Blob([rowsToCsv(visibleRows())], { type: "text/csv;charset=utf-8" }));
+    const link = h("a", { href: url, download: "ladinglens-report.csv" });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function renderList() {
     const rows = ctx.getReport()?.emails ?? [];
+    renderPills(rows);
     const groups = reportGroups(rows, filters, CATEGORY_ORDER);
     const filtering = Boolean(filters.status || filters.q.trim());
     const matching = groups.reduce((n, g) => n + g.items.length, 0);
