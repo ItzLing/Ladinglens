@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
+from app import run_state
 from app.llm_client import LLMUnavailableError, llm_request_context
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
@@ -267,7 +268,9 @@ def run_pipeline(
         if email_id not in done
     ]
 
-    def work(email_id: str, email: dict) -> dict:
+    def work(email_id: str, email: dict) -> Optional[dict]:
+        if run_state.stop_requested():
+            return None  # asked to stop: leave this one for a resume
         if not isinstance(email, Mapping) or email.get("email_id") != email_id:
             invalid_record = TypeError("email record has no valid string email_id")
             _log_stage_failure(
@@ -308,6 +311,8 @@ def run_pipeline(
                         email_id, "batch_boundary", exc, "processing_error"
                     )
                     record = _record(_processing_error(email_id, "batch_boundary"))
+                if record is None:
+                    continue
                 # The scheduled ID is authoritative if a stage returns a wrong one.
                 if record.get("email_id") != email_id:
                     returned_id = ValueError("stage returned a different email_id")
@@ -327,6 +332,8 @@ def run_pipeline(
     submission = {}
     classify_records = {}
     for email_id, _email in email_items:  # restore input order after concurrency
+        if email_id not in done:
+            continue  # only possible when the run was stopped early
         record = done[email_id]
         entry = {key: record[key] for key in SUBMISSION_KEYS}
         submission[email_id] = entry

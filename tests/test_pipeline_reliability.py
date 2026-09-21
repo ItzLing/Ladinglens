@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 
+from app import run_state
 from app.pipeline import run
 from app.pipeline.read_document import DocumentUnreadableError
 from app.schema import (
@@ -54,6 +55,34 @@ def comparison_email(email_id="email_004", suffix="txt"):
 
 
 class PipelineReliabilityTests(unittest.TestCase):
+    def test_stopping_leaves_the_rest_for_a_resume_and_keeps_what_finished(self):
+        emails = [{"email_id": f"email_00{n}", "attachments": []} for n in range(1, 5)]
+        checkpoint = MemoryCheckpoint()
+
+        def process(email, _inbox):
+            if email["email_id"] == "email_002":
+                run_state.lock.acquire()
+                try:
+                    self.assertTrue(run_state.request_stop())  # the stop button, mid-run
+                finally:
+                    run_state.lock.release()
+            return ComparisonResult(email_id=email["email_id"], category=EmailCategory.GENERAL)
+
+        try:
+            with patch.object(run, "process_email", side_effect=process):
+                submission, _cache = run.run_pipeline(FakeInbox(emails), checkpoint=checkpoint, concurrency=1)
+            self.assertEqual(list(submission), ["email_001", "email_002"])
+            self.assertEqual([r["email_id"] for r in checkpoint.records], ["email_001", "email_002"])
+
+            # a stopped run resumes from the checkpoint and finishes the other two
+            run_state.end()
+            with patch.object(run, "process_email", side_effect=lambda e, _i: ComparisonResult(email_id=e["email_id"], category=EmailCategory.GENERAL)) as again:
+                submission, _cache = run.run_pipeline(FakeInbox(emails), checkpoint=checkpoint, resume=True, concurrency=1)
+            self.assertEqual(again.call_count, 2)
+            self.assertEqual(list(submission), ["email_001", "email_002", "email_003", "email_004"])
+        finally:
+            run_state.end()
+
     def test_one_failed_email_does_not_stop_the_next(self):
         emails = [
             {"email_id": "email_001", "attachments": []},

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   caseBanner, createStore, fieldRows, filterRows, groupCounts, isFailed, needsAttention, sortRows, statusChip, tabCounts,
-  escalationNote, nextStep, priorityOf, sortByPriority, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
+  delegate, escalationNote, nextStep, takeBack, priorityOf, sortByPriority, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
 } from "../../web/js/store.js";
 import { FIELDS } from "../../web/js/util/format.js";
 
@@ -225,4 +225,21 @@ test("sorting by priority puts mismatches first, then reviews, then clean checks
   const before = ROWS.map((r) => r.email_id);
   assert.deepEqual(sortByPriority(ROWS).map((r) => r.email_id), ["e2", "e4", "e5", "e1", "e3", "e6"]);
   assert.deepEqual(ROWS.map((r) => r.email_id), before);
+});
+
+test("delegating hands a case to a named person, tidies the name, and ignores a blank one", () => {
+  const first = delegate({}, "e4", "  Aisha   Rahman ", "2026-09-21T10:00:00Z");
+  assert.deepEqual(first, { e4: { to: "Aisha Rahman", at: "2026-09-21T10:00:00Z" } });
+  const blank = {};
+  assert.equal(delegate(blank, "e4", "   "), blank);
+  assert.equal(delegate(blank, "", "Aisha"), blank);
+  assert.equal(delegate(first, "e4", "x".repeat(200))["e4"].to.length, 80);
+  assert.deepEqual(Object.keys(delegate(first, "e5", "Colt")).sort(), ["e4", "e5"]);
+  assert.deepEqual(first, { e4: { to: "Aisha Rahman", at: "2026-09-21T10:00:00Z" } }, "the old map is not changed");
+});
+
+test("taking a case back removes only that hand-over", () => {
+  const map = { e4: { to: "A", at: "t" }, e5: { to: "B", at: "t" } };
+  assert.deepEqual(takeBack(map, "e4"), { e5: { to: "B", at: "t" } });
+  assert.equal(Object.keys(map).length, 2);
 });

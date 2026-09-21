@@ -15,6 +15,9 @@ const PATHS = {
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   play: '<path d="M7 5v14l12-7z"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  send: '<path d="M21 3 3 10.5l7 2.5 2.5 7z"/><path d="m10 13 4-4"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
 };
 

@@ -102,6 +102,24 @@ class StatusAndReportTests(ApiCase):
         self.assertEqual((body["running"], body["scope"], body["processed"], body["total"]),
                          (True, "sample", 2, 5))
 
+    def test_stop_is_refused_when_nothing_is_running(self):
+        self.assertEqual(self.client.post("/api/run/stop").status_code, 409)
+        self.assertFalse(run_state.stop_requested())
+
+    def test_stop_marks_the_run_as_stopping_and_the_next_run_starts_clean(self):
+        run_state.lock.acquire()
+        run_state.begin("full", 10)
+        try:
+            self.assertFalse(self.client.get("/api/status").json()["stopping"])
+            self.assertEqual(self.client.post("/api/run/stop").json(), {"stopping": True})
+            self.assertTrue(self.client.get("/api/status").json()["stopping"])
+            run_state.begin("full", 10)  # the next run must not inherit the request
+            self.assertFalse(run_state.stop_requested())
+        finally:
+            run_state.end()
+            run_state.lock.release()
+        self.assertFalse(self.client.get("/api/status").json()["stopping"])
+
     def test_report_has_one_light_row_per_email_and_the_totals(self):
         self.full_run()
         body = self.client.get("/api/report").json()

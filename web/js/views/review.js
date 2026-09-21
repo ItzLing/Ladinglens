@@ -1,12 +1,13 @@
 import { add, h, clear, announce } from "../util/dom.js";
 import { icon } from "../util/icons.js";
 import { FIELDS, REASON, categoryLabel, formatConfidence } from "../util/format.js";
-import { caseBanner, fieldRows, sortRows } from "../store.js";
+import { caseBanner, delegate, fieldRows, isFailed, sortRows, takeBack } from "../store.js";
 import { routeHash } from "../router.js";
 import { labelChip, statusChipEl } from "../components/chips.js";
 import { documentsView } from "../components/fields.js";
 
 const STORAGE_KEY = "ladinglens-review-corrections-v1";
+const DELEGATION_KEY = "ladinglens-review-delegations-v1";
 const REVIEW_FIELDS = [...FIELDS, ["amount_money", "Amount / money"]];
 const URGENT_REASONS = new Set(["processing_error", "missing_attachment", "unreadable"]);
 
@@ -20,6 +21,23 @@ function readSaved() {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   } catch {
     return {};
+  }
+}
+
+function readDelegations() {
+  try {
+    return JSON.parse(localStorage.getItem(DELEGATION_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeDelegations(map) {
+  try {
+    localStorage.setItem(DELEGATION_KEY, JSON.stringify(map));
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -84,6 +102,7 @@ export function mountReview(root, ctx) {
   let mode = "open";
   let q = "";
   let saved = readSaved();
+  let delegations = readDelegations();
 
   const tabsEl = h("div", { class: "tabs", role: "tablist", "aria-label": "Review status" });
   const search = h("input", {
@@ -101,10 +120,11 @@ export function mountReview(root, ctx) {
   clear(root).append(panes);
 
   const rows = () => ctx.getReport()?.emails ?? [];
-  const reviewRows = () => sortRows(rows().filter(isReviewCandidate));
+  const reviewRows = () => sortRows(rows().filter((row) => isReviewCandidate(row) && !delegations[row.email_id]));
+  const delegatedRows = () => sortRows(rows().filter((row) => Boolean(delegations[row.email_id])));
   const savedRows = () => sortRows(rows().filter((row) => Boolean(saved[row.email_id])));
   const activeRows = () => {
-    const pool = mode === "saved" ? savedRows() : reviewRows();
+    const pool = mode === "saved" ? savedRows() : mode === "delegated" ? delegatedRows() : reviewRows();
     const needle = q.trim().toLowerCase();
     return needle
       ? pool.filter((row) => [row.email_id, row.subject, row.from, row.summary, reviewReason(row)].some((value) => String(value ?? "").toLowerCase().includes(needle)))
@@ -117,9 +137,9 @@ export function mountReview(root, ctx) {
   }
 
   function renderTabs() {
-    const counts = { open: reviewRows().length, saved: savedRows().length };
+    const counts = { open: reviewRows().length, delegated: delegatedRows().length, saved: savedRows().length };
     clear(tabsEl).append(
-      ...[["open", "To review"], ["saved", "Saved"]].map(([key, label]) =>
+      ...[["open", "To review"], ["delegated", "Delegated"], ["saved", "Saved"]].map(([key, label]) =>
         h("button", { class: "tab", role: "tab", type: "button", "aria-selected": String(mode === key), onclick: () => setMode(key) },
           label, h("span", { class: "count" }, counts[key])),
       ),
@@ -130,7 +150,8 @@ export function mountReview(root, ctx) {
     const list = activeRows();
     clear(listEl);
     if (!list.length) {
-      listEl.append(h("div", { class: "empty" }, mode === "saved" ? "No saved corrections yet." : "Nothing is waiting for review."));
+      const empty = { saved: "No saved corrections yet.", delegated: "Nothing has been delegated yet." }[mode] ?? "Nothing is waiting for review.";
+      listEl.append(h("div", { class: "empty" }, empty));
       return;
     }
     listEl.append(
@@ -142,6 +163,7 @@ export function mountReview(root, ctx) {
             h("span", { class: `chip ${isUrgent(row) ? "failed" : "review"}` }, icon(isUrgent(row) ? "alert" : "info"), isUrgent(row) ? "Urgent" : "Normal"),
             labelChip(row.category),
             statusChipEl(row),
+            delegations[row.email_id] ? h("span", { class: "chip label" }, icon("user"), `Delegated to ${delegations[row.email_id].to}`) : null,
             saved[row.email_id] ? h("span", { class: "chip ok" }, icon("check"), "Saved") : null),
           h("div", { class: "review-reason" }, reviewReason(row)),
         ),
@@ -246,6 +268,47 @@ export function mountReview(root, ctx) {
     return form;
   }
 
+  /** Demo delegation: type a name, press Send. Nothing leaves the browser. */
+  function buildDelegate(row) {
+    const given = delegations[row.email_id];
+    const box = h("div", { class: "section review-delegate" }, h("h3", {}, "Delegate this case"));
+    if (given) {
+      add(box,
+        h("div", { class: "delegated" },
+          icon("user"),
+          h("span", {}, "Delegated to ", h("strong", {}, given.to), ` on ${new Date(given.at).toLocaleString()}`),
+          h("button", { class: "btn small", type: "button", onclick: () => {
+            delegations = takeBack(delegations, row.email_id);
+            writeDelegations(delegations);
+            announce(`Took ${row.email_id} back.`);
+            renderList();
+            renderDetail();
+          } }, "Take back")));
+    } else {
+      const name = h("input", { name: "person", class: "search", placeholder: "Name of the person to handle this", "aria-label": "Person to delegate this case to", autocomplete: "off", maxlength: "80" });
+      const label = h("span", {}, "Send");
+      const send = h("button", { class: "btn", type: "submit", disabled: true }, icon("send"), label);
+      name.addEventListener("input", () => {
+        const who = name.value.trim();
+        send.disabled = !who;
+        label.textContent = who ? `Send to ${who}` : "Send";
+      });
+      add(box,
+        h("form", { class: "delegate-form", onsubmit: (event) => {
+          event.preventDefault();
+          const next = delegate(delegations, row.email_id, name.value);
+          if (next === delegations) return;
+          delegations = next;
+          if (!writeDelegations(delegations)) announce("Could not save in this browser.");
+          else announce(`Delegated ${row.email_id} to ${delegations[row.email_id].to}.`);
+          renderList();
+          renderDetail();
+        } }, name, send));
+    }
+    add(box, h("small", { class: "muted" }, "Demo only: nothing is emailed. The hand-over is kept in this browser."));
+    return box;
+  }
+
   function detailHeader(row) {
     return [
       backButton(),
@@ -263,6 +326,7 @@ export function mountReview(root, ctx) {
     const docs = documentsView(kase, api);
     return [
       banner ? h("div", { class: `banner ${banner.kind}` }, icon(banner.icon), banner.text) : null,
+      buildDelegate(row),
       buildForm(row, kase),
       h("div", { class: "section" }, h("h3", {}, "Original email and documents"),
         fold("Email body", h("pre", { class: "doc" }, kase.email.body || ""), true),
@@ -275,7 +339,12 @@ export function mountReview(root, ctx) {
     clear(detailEl);
     panes.classList.toggle("has-selection", Boolean(selectedId));
     if (!selectedId) {
-      detailEl.append(h("div", { class: "empty" }, "Select a case to review and correct the fields."));
+      const failed = reviewRows().filter(isFailed).length;
+      detailEl.append(
+        h("div", { class: "empty" },
+          "Select a case to review and correct the fields.",
+          failed ? h("p", { class: "muted", style: "margin-top:8px" }, `${failed} of these failed on the model API, often a rate limit or an exhausted quota, not because of the documents. Retry them once the quota is back.`) : null),
+      );
       return;
     }
     const row = rows().find((candidate) => candidate.email_id === selectedId);
@@ -306,6 +375,7 @@ export function mountReview(root, ctx) {
     },
     refresh() {
       saved = readSaved();
+      delegations = readDelegations();
       renderList();
       markSelected();
       renderDetail();

@@ -124,7 +124,10 @@ python scripts\poll.py --once
 A full run takes far longer than a polling interval, so `POST /run` refuses a second
 concurrent run with **HTTP 409** rather than letting two runs append to the same
 checkpoint and race on `output.json`. The poller treats 409 as "skip this tick".
-`GET /status` reports whether a run is in progress.
+`GET /status` reports whether a run is in progress. `POST /api/run/stop` (the Stop button)
+asks the run to stop: emails already being processed finish and are saved, the rest are
+left alone, and `POST /run?resume=true` carries on from the checkpoint. A stopped run does
+not rewrite `output.json`, so a partial run can never replace a full one.
 
 To survive reboots, register the `--once` form with Windows Task Scheduler:
 

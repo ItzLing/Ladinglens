@@ -192,6 +192,23 @@ export function statusCounts(rows, { q = "" } = {}) {
   return counts;
 }
 
+/**
+ * Hand a case to a named person. Demo only: nothing is sent, the map is what the page keeps.
+ * A blank name changes nothing. Returns a new map.
+ */
+export function delegate(map, emailId, name, now = new Date().toISOString()) {
+  const to = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (!emailId || !to) return map;
+  return { ...map, [emailId]: { to, at: now } };
+}
+
+/** Take a case back from whoever it was handed to. Returns a new map. */
+export function takeBack(map, emailId) {
+  const next = { ...map };
+  delete next[emailId];
+  return next;
+}
+
 /** Emails grouped by label for the folded Report list, in label order, empty groups left out. */
 export function reportGroups(rows, { status = "", q = "" } = {}, order = []) {
   const pool = rows.filter((r) => (!status || r.status === status) && matchesQuery(r, q));

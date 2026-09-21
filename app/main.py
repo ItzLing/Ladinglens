@@ -98,10 +98,23 @@ def _do_run(limit: Optional[int], resume: bool) -> dict:
     submission, classify_records = run_pipeline(
         inbox, limit=limit, checkpoint=store.checkpoint(scope), resume=resume
     )
+    stopped = run_state.stop_requested()
     counts: dict = {}
     for entry in submission.values():
         counts[entry["status"]] = counts.get(entry["status"], 0) + 1
     store.finish_run(run_id, counts)
+
+    if stopped:
+        # Every email finished so far is already in the checkpoint. Writing the
+        # partial submission would replace a full output.json with a fragment, so
+        # leave the outputs alone; resume=true carries on from the checkpoint.
+        return {
+            "stopped": True,
+            "emails_processed": len(submission),
+            "checkpoint_path": str(checkpoint_file(scope)),
+            "storage": store.backend,
+            "storage_error": store.error,
+        }
 
     suffix = ".sample" if limit else ""
     output_path = results_file(f"output{suffix}.json")
@@ -111,6 +124,7 @@ def _do_run(limit: Optional[int], resume: bool) -> dict:
     cache_path.write_text(json.dumps(classify_records, indent=2))
 
     return {
+        "stopped": False,
         "emails_processed": len(submission),
         "output_path": str(output_path),
         "classify_cache_path": str(cache_path),
