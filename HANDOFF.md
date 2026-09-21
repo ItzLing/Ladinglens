@@ -994,3 +994,101 @@ emails caught.
   browser pane's screenshots only work after `tabs_select` fronts the tab.
 
 **Synced through:** `334053b` (committed by task: `8c059b5`, `66b54fc`, `4fb134e`, `34176bb`, `334053b`, then docs)
+
+---
+
+## 2026-09-21 — Codex — Brendan (Task 4 reliability)
+
+**What changed:**
+- Ported bounded OpenAI-compatible provider retries onto the current multimodal client:
+  exactly three application attempts with 0.5s and 1.0s delays for timeouts, connection
+  errors, HTTP 408/429, and every 5xx response. SDK retries remain disabled.
+- Added metadata-only request/stage logging and failure-stage correlation without logging
+  prompts, document contents, provider response bodies, credentials, or exception messages.
+- Hardened classification, SI extraction, BL extraction, comparison, worker, and batch
+  boundaries so one malformed or failed email produces `NEEDS_REVIEW` without ending the run.
+- Added 31 `unittest` cases using the installed OpenAI SDK's real exception classes, including
+  vision-mode preservation, concurrent email isolation, checkpoint resume, and exact evaluator
+  output keys.
+
+**Why:**
+- Task 4 requires transient provider failures to retry predictably while permanent failures
+  fail fast, and no individual email failure may terminate or corrupt the batch.
+
+**Decisions made:**
+- Did not apply the older `e822ada` patch because `git apply --check` failed against `9986162`.
+  The old patch targeted the pre-OCR `_generate` signature and text-only attachment path, so
+  forcing it would have replaced newer PDF/DOCX/XLSX/vision work.
+- Kept `failure_stage` internal to checkpoint/review records. Evaluator output and the official
+  seven comparison fields remain unchanged.
+- Kept malformed model JSON and document validation failures non-retryable. Provider failures
+  are `processing_error`; unreadable/unsupported documents remain `unreadable`.
+
+**Verification:**
+- Installed `requirements.txt` into the existing ignored Python 3.14 virtual environment.
+  OpenAI SDK 3.16.2 imports successfully and `pip check` reports no broken requirements.
+- `python -m unittest -v`: 31/31 passed with the real SDK; syntax compilation passed.
+- Uvicorn started cleanly; `GET /docs` and `GET /openapi.json` returned HTTP 200 and `/run`
+  remains present.
+
+**Open questions / next steps:**
+- No official dataset is present and `.env` has no `LLM_API_KEY`, so the requested one-email
+  real-provider check remains blocked. Do not fabricate either prerequisite.
+- Review the uncommitted Task 4 diff before committing. No push, merge, or PR was made.
+
+**Synced through:** `99861622c301b83bf5e5dd687d662a91ff32dda8` (Task 4 changes uncommitted)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (fix after merging brendan-task4)
+
+**What changed:**
+- `app/pipeline/run.py` rewritten by hand to combine both branches. The merge commit `62f827b`
+  had **left it unable to compile** (a missing comma, stale variable names, and the batch runner
+  still using `_load_checkpoint`, `_failed`, `_better_failure` and `checkpoint_path`, which no
+  longer exist). Even the parts that parsed were wrong: `_extract_document` still called the
+  old `extract_fields(read_document(...))`, which `run.py` no longer imports, so every document
+  check would have failed with a `NameError` that Brendan's broad `except Exception` turns into a
+  quiet `processing_error`.
+- `app/llm_client.py`: `call_vision_json` now follows Brendan's convention for a non-JSON reply
+  (log the error type, raise `ValueError("model did not return valid JSON")`) instead of putting
+  the raw reply, which can hold document text, in the message.
+- `tests/test_pipeline_reliability.py` (Brendan's) adapted to the merged interfaces. Only the
+  plumbing changed; every test's intent and assertions are as he wrote them: `classify_email`
+  returns `(category, confidence, summary)`, extraction is patched at `run.extract_document`,
+  and the checkpoint is a `store.Checkpoint`-shaped object instead of a path.
+- New `RealLadderThroughRunTests` in `tests/test_extract_ladder.py`: `process_email` with the
+  real extraction ladder and only the model mocked. The other run tests patch
+  `run.extract_document`, and Brendan's patched `extract_fields`, so nothing exercised the seam
+  that had broken. Simulating the merge bug makes 3 of these 4 tests fail.
+- `HANDOFF.md`, `schema.py` and the rest of `llm_client.py` were merged correctly and needed no
+  change: no line from either parent is missing from `HANDOFF.md`, and there are no duplicate
+  entries.
+
+**What the merged `run.py` now does (both sides kept):**
+- From Brendan: per-stage failure isolation with `failure_stage`, metadata-only logging (email
+  ID, stage, error type; never document text), invalid or duplicate email IDs contained,
+  worker and batch boundaries, and the scheduled ID being authoritative.
+- From this branch: the email `summary`, every value read (`extracted`), `field_issues`, the
+  extraction ladder via `extract_document`, and the `checkpoint` object (file, plus MongoDB).
+- Failures keep what was already known: category, confidence and summary survive a later-stage
+  failure. `failure_stage` and `summary` are in the stored record, never in `output.json`.
+
+**Verification:**
+- 132 Python tests and 37 JavaScript tests pass (31 of the Python ones are Brendan's).
+- A real run of the merged pipeline on 6 emails (`gemini-3.1-flash-lite`, temp results folder):
+  5 `OK`, 1 `MISMATCH`, no failures, 6 of 6 with a summary, 3 with extracted values, and the
+  submission keys unchanged.
+- **Not verified:** Brendan's own open item (a one-email real-provider check with his retry
+  settings) is covered only by that 6-email run, and I did not exercise a real 429 to see the
+  new 3-attempt backoff.
+
+**Open questions / next steps:**
+- **The pushed merge commit `62f827b` is broken.** Commit this fix before pushing, or before the
+  PR is merged, so `main` never holds a `run.py` that does not compile.
+- Brendan reduced retries from 5 to 3 attempts (0.5 s and 1.0 s) and stopped retrying HTTP 409.
+  With the free tier's per-minute limits that is a much shorter wait than before; if 429s become
+  common in a full run, revisit the delay.
+
+**Synced through:** `a6f0a5d` (the merge `62f827b`, then the fixes `be619b2` and `a6f0a5d`)

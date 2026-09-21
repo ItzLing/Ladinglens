@@ -7,6 +7,7 @@ import { mountRunbar } from "./components/runbar.js";
 import { mountHome } from "./views/home.js";
 import { mountParsing } from "./views/parsing.js";
 import { mountData } from "./views/data.js";
+import { mountReport } from "./views/report.js";
 import { mountSoon } from "./views/soon.js";
 
 const railEl = document.getElementById("rail");
@@ -68,6 +69,7 @@ function mountTab() {
     app.view = mountParsing(contentEl, { ...ctx, view: app.parsing, onRetried: reload });
     app.view.setId(id);
   } else if (tab === "data") app.view = mountData(contentEl, ctx);
+  else if (tab === "report") app.view = mountReport(contentEl, ctx);
   else app.view = mountSoon(contentEl, { tab });
   app.runbar?.render();
 }
@@ -118,7 +120,7 @@ addEventListener("keydown", (e) => {
   if (typing) { if (e.key === "Escape") e.target.blur(); return; }
   if (goPending) {
     goPending = false;
-    const target = { h: "#/", p: "#/parsing", d: "#/data" }[e.key];
+    const target = { h: "#/", p: "#/parsing", r: "#/report", d: "#/data" }[e.key];
     if (target) { location.hash = target; e.preventDefault(); }
     return;
   }

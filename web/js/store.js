@@ -79,6 +79,47 @@ export function fieldRows(record, fields) {
   });
 }
 
+/** The four headline numbers of the Report tab. */
+export function reportTiles(summary = {}) {
+  return [
+    { label: "Emails processed", value: summary.total ?? 0, note: "whole inbox" },
+    { label: "Comparison requests", value: summary.categories?.BL_COMPARISON ?? 0, note: "routed to document checking" },
+    { label: "Mismatches found", value: summary.defects ?? 0, note: "SI and BL disagree" },
+    { label: "Escalated to a human", value: summary.statuses?.NEEDS_REVIEW ?? 0, note: "not decided automatically" },
+  ];
+}
+
+/** Explains whichever escalation reason dominates, so a large review count never stands unexplained. */
+export function escalationNote(summary = {}) {
+  const reasons = summary.review_reasons ?? {};
+  if (reasons.processing_error) {
+    return `${plural(reasons.processing_error, "email")} could not be processed because the model API failed, not because of anything in the documents. They are escalated rather than guessed at, and can be retried without re-running the rest.`;
+  }
+  if (reasons.unreadable) {
+    return `${plural(reasons.unreadable, "email")} carry an attachment that could not be read: a corrupt or empty file, or a type this version does not open. Rather than guess at its contents, the system escalates them for a person.`;
+  }
+  return null;
+}
+
+export const STATUS_LABEL = { OK: "No mismatch", MISMATCH: "Mismatch", NEEDS_REVIEW: "Needs review" };
+
+/** Emails grouped by label for the folded Report list, in label order, empty groups left out. */
+export function reportGroups(rows, { status = "", q = "" } = {}, order = []) {
+  const pool = rows.filter((r) => (!status || r.status === status) && matchesQuery(r, q));
+  const labels = [...order, ...new Set(pool.map((r) => r.category).filter((c) => !order.includes(c)))];
+  return labels
+    .map((category) => {
+      const items = sortRows(pool.filter((r) => r.category === category));
+      return {
+        category,
+        items,
+        mismatches: items.filter((r) => r.status === "MISMATCH").length,
+        reviews: items.filter((r) => r.status === "NEEDS_REVIEW").length,
+      };
+    })
+    .filter((g) => g.items.length > 0);
+}
+
 const FIELD_LABEL = Object.fromEntries(FIELDS);
 
 /** One plain sentence saying why a case is here (or that it is fine). */
