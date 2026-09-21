@@ -150,6 +150,9 @@ activemq-data/
 # Environments
 .env
 .envrc
+# any .env variant (.env.local, .env.bak.*) -- these carry real keys.
+.env.*
+!.env.example
 .venv
 env/
 venv/
