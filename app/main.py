@@ -2,12 +2,13 @@
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "data"
@@ -20,6 +21,27 @@ from loader import Inbox  # noqa: E402
 from app.pipeline.run import run_pipeline  # noqa: E402
 
 app = FastAPI(title="Ladinglens")
+
+# A run takes far longer than a polling interval, so a scheduler will try to
+# start a second one on top of the first. Two runs would append to the same
+# checkpoint and race on output.json, so the second is refused rather than
+# allowed to corrupt the first. In-process rather than a lock file, which would
+# survive a crash and wedge every later run.
+_run_lock = threading.Lock()
+
+
+@app.get("/status")
+def status():
+    """Whether a run is in progress, and what the last one produced."""
+    checkpoint = ROOT_DIR / "results.jsonl"
+    processed = 0
+    if checkpoint.exists():
+        processed = sum(1 for line in checkpoint.read_text().splitlines() if line.strip())
+    return {
+        "running": _run_lock.locked(),
+        "checkpoint_records": processed,
+        "output_written": (ROOT_DIR / "output.json").exists(),
+    }
 
 
 @app.post("/run")
@@ -40,6 +62,15 @@ def run(
     back up rather than re-spending quota on emails already done -- it defaults
     to off, so a prompt change doesn't silently reuse stale verdicts.
     """
+    if not _run_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="a run is already in progress")
+    try:
+        return _do_run(limit, resume)
+    finally:
+        _run_lock.release()
+
+
+def _do_run(limit: Optional[int], resume: bool) -> dict:
     source = os.environ.get("INBOX_SOURCE", str(DATA_DIR))
     inbox = Inbox(source)
 

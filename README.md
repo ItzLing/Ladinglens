@@ -101,6 +101,43 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:8000/run?resume=true"
 Don't resume across a model change -- you'd end up with a dataset judged half by one
 model and half by another. `resume` is off by default for that reason.
 
+## Polling the inbox on a schedule
+
+`scripts/poll.py` calls `POST /run?resume=true` on an interval. Because resume skips
+emails already in `results.jsonl`, each tick only processes what is new and retries
+whatever previously failed on the API -- a tick that finds nothing new costs no calls.
+
+```bash
+python scripts/poll.py                 # loop, every 5 minutes
+python scripts/poll.py --interval 120  # every 2 minutes
+python scripts/poll.py --once          # one tick, for Task Scheduler / cron
+```
+
+```powershell
+python scripts\poll.py
+python scripts\poll.py --interval 120
+python scripts\poll.py --once
+```
+
+A full run takes far longer than a polling interval, so `POST /run` refuses a second
+concurrent run with **HTTP 409** rather than letting two runs append to the same
+checkpoint and race on `output.json`. The poller treats 409 as "skip this tick".
+`GET /status` reports whether a run is in progress.
+
+To survive reboots, register the `--once` form with Windows Task Scheduler:
+
+```powershell
+$py = (Get-Command python).Source
+$action  = New-ScheduledTaskAction -Execute $py -Argument "scripts\poll.py --once" -WorkingDirectory $PWD
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
+Register-ScheduledTask -TaskName "Ladinglens poll" -Action $action -Trigger $trigger
+```
+
+Note the dataset is a fixed set of 520 files, so a poller finds no new work after the
+first pass. For this to do anything real, `INBOX_SOURCE` needs a source that changes --
+the Docker dataset server, or a mailbox. `loader.py`'s `Inbox` is the seam: anything
+exposing `emails()` and `read_text()` drops in without pipeline changes.
+
 ## Scoring a run
 
 ```bash
