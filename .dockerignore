@@ -1,0 +1,13 @@
+# The dataset and its scorer are organizer-only and must never enter an image.
+data/*
+!data/loader.py
+results/
+ocr_cache/
+web/
+scripts/
+tests/
+.git/
+.env
+.env.*
+__pycache__/
+*.pyc
