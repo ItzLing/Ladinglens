@@ -284,4 +284,16 @@ def call_vision_json(
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:
-        raise ValueError(f"model did not return valid JSON: {text!r}") from exc
+        # Like call_json: log the type only, and keep the reply, which can hold
+        # document text, out of the error message.
+        logger.error(
+            "llm_response_invalid_json",
+            extra={
+                **_log_fields(
+                    attempt_number=None,
+                    error_type=type(exc).__name__,
+                ),
+                "final_status": "invalid_response",
+            },
+        )
+        raise ValueError("model did not return valid JSON") from exc
