@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   caseBanner, createStore, fieldRows, filterRows, groupCounts, isFailed, needsAttention, sortRows, statusChip, tabCounts,
-  escalationNote, nextStep, priorityOf, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
+  escalationNote, nextStep, priorityOf, sortByPriority, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
 } from "../../web/js/store.js";
 import { FIELDS } from "../../web/js/util/format.js";
 
@@ -219,4 +219,10 @@ test("the CSV has a header, quotes every cell, and doubles quotes inside", () =>
   assert.equal(csv[0], '"priority","email_id","subject","from","category","result","confidence","next_step","fields_flagged"');
   assert.equal(csv[1], '"High","e2","Say ""hi"", ok","a@x.com","BL comparison","Mismatch","96%","Ask the documentation team to correct the flagged BL fields.","Consignee, Notify party"');
   assert.equal(rowsToCsv([]).split("\n").length, 1);
+});
+
+test("sorting by priority puts mismatches first, then reviews, then clean checks, and leaves the input alone", () => {
+  const before = ROWS.map((r) => r.email_id);
+  assert.deepEqual(sortByPriority(ROWS).map((r) => r.email_id), ["e2", "e4", "e5", "e1", "e3", "e6"]);
+  assert.deepEqual(ROWS.map((r) => r.email_id), before);
 });

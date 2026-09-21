@@ -1,6 +1,6 @@
 import { h, clear } from "../util/dom.js";
 import { CATEGORY_ORDER, categoryLabel, formatConfidence, formatTime } from "../util/format.js";
-import { sortRows } from "../store.js";
+import { PRIORITY_LABEL, nextStep, priorityOf, sortByPriority } from "../store.js";
 import { routeHash } from "../router.js";
 import { labelChip, statusChipEl } from "../components/chips.js";
 
@@ -55,7 +55,7 @@ function queryMatches(row, query) {
 }
 
 function filteredRows(rows, filters) {
-  return sortRows(rows.filter((row) =>
+  return sortByPriority(rows.filter((row) =>
     categoryMatches(row, filters.category) &&
     statusMatches(row, filters.status) &&
     queryMatches(row, filters.q)));
@@ -78,18 +78,20 @@ function categoryBars(summary = {}) {
 
 function queueRows(rows) {
   if (!rows.length) {
-    return h("tbody", {}, h("tr", {}, h("td", { colspan: "6", class: "home-table-empty" }, "No emails match these filters.")));
+    return h("tbody", {}, h("tr", {}, h("td", { colspan: "8", class: "home-table-empty" }, "No emails match these filters.")));
   }
   return h("tbody", {},
     rows.slice(0, 12).map((row) => {
       const target = row.status === "NEEDS_REVIEW" ? "review" : "parsing";
       return (
       h("tr", {},
+        h("td", {}, h("span", { class: `priority ${priorityOf(row)}` }, PRIORITY_LABEL[priorityOf(row)])),
         h("td", {}, h("a", { class: "mono", href: routeHash(target, row.email_id) }, row.email_id)),
         h("td", { class: "home-subject" }, h("a", { href: routeHash(target, row.email_id) }, row.subject || "(no subject)")),
         h("td", {}, labelChip(row.category)),
         h("td", {}, statusChipEl(row) ?? h("span", { class: "chip ok" }, "OK")),
         h("td", {}, formatConfidence(row.confidence)),
+        h("td", { class: "home-next", title: nextStep(row) }, nextStep(row)),
         h("td", { class: "home-flagged" }, (row.defect_fields ?? []).join(", ") || "-"),
       ));
     }),
@@ -185,16 +187,18 @@ export function mountHome(root, { getReport, api }) {
     const total = report?.emails?.length ?? 0;
     return h("section", { class: "home-queue card" },
       h("div", { class: "home-card-head" },
-        h("div", {}, h("h2", {}, "Review queue"), h("p", {}, "Select an email to inspect classification, mismatches, source text and escalation context.")),
+        h("div", {}, h("h2", {}, "Review queue"), h("p", {}, "Prioritised by what a person must do: fix mismatches first, then review uncertain cases, then archive clean checks.")),
         h("span", { class: "home-count" }, `${rows.length} of ${total} emails`)),
       h("div", { class: "home-table-wrap" },
         h("table", { class: "home-table" },
           h("thead", {}, h("tr", {},
+            h("th", {}, "Priority"),
             h("th", {}, "Email"),
             h("th", {}, "Subject"),
             h("th", {}, "Category"),
             h("th", {}, "Result"),
             h("th", {}, "Confidence"),
+            h("th", {}, "Next step"),
             h("th", {}, "Fields flagged"))),
           queueRows(rows))));
   }

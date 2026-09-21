@@ -389,6 +389,7 @@ pre.doc, pre.json {
 .home-table-wrap { overflow: auto; }
 .home-table {
   width: 100%;
+  min-width: 1200px; /* the fixed columns leave the subject about 230px; narrower windows scroll */
   border-collapse: collapse;
   font-size: var(--text-sm);
   table-layout: fixed;
@@ -400,19 +401,23 @@ pre.doc, pre.json {
   text-align: left;
   vertical-align: middle;
 }
-.home-table th:nth-child(1) { width: 86px; }
-.home-table th:nth-child(3) { width: 150px; }
-.home-table th:nth-child(4) { width: 150px; }
-.home-table th:nth-child(5) { width: 110px; }
-.home-table th:nth-child(6) { width: 160px; }
+.home-table th:nth-child(1) { width: 92px; }
+.home-table th:nth-child(2) { width: 86px; }
+.home-table th:nth-child(4) { width: 140px; }
+.home-table th:nth-child(5) { width: 150px; }
+.home-table th:nth-child(6) { width: 100px; }
+.home-table th:nth-child(7) { width: 240px; }
+.home-table th:nth-child(8) { width: 160px; }
 .home-table td a { color: inherit; text-decoration: none; }
 .home-table td a:hover { color: var(--accent); text-decoration: underline; }
 .home-subject,
+.home-next,
 .home-flagged {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.home-next,
 .home-flagged { color: var(--text-secondary); }
 .home-table-empty {
   height: 120px;
@@ -431,7 +436,6 @@ pre.doc, pre.json {
   .home-steps,
   .home-stats,
   .home-tools { grid-template-columns: 1fr; }
-  .home-table { min-width: 760px; }
 }
 
 /* ---- database ---- */

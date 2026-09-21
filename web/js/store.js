@@ -103,6 +103,11 @@ export function nextStep(row) {
   }[row.category] ?? "No document check needed.";
 }
 
+/** Mismatches first, then reviews, then clean checks; by ID within each. Does not change the array it is given. */
+export function sortByPriority(rows) {
+  return [...rows].sort((a, b) => PRIORITY_RANK[priorityOf(a)] - PRIORITY_RANK[priorityOf(b)] || a.email_id.localeCompare(b.email_id));
+}
+
 /** The result as one plain phrase, for the CSV and the summary. */
 export function resultText(row) {
   if (isFailed(row)) return REASON.processing_error;
@@ -193,9 +198,7 @@ export function reportGroups(rows, { status = "", q = "" } = {}, order = []) {
   const labels = [...order, ...new Set(pool.map((r) => r.category).filter((c) => !order.includes(c)))];
   return labels
     .map((category) => {
-      const items = pool
-        .filter((r) => r.category === category)
-        .sort((a, b) => PRIORITY_RANK[priorityOf(a)] - PRIORITY_RANK[priorityOf(b)] || a.email_id.localeCompare(b.email_id));
+      const items = sortByPriority(pool.filter((r) => r.category === category));
       return {
         category,
         items,
