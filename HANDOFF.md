@@ -466,3 +466,77 @@ from before the entries below.
   untracked `results.jsonl` at the repo root.
 
 **Synced through:** `f52ad72` (this entry and the poller change are committed after it)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (retry one email, Claude as the model, reference folder)
+
+**What changed:**
+- **Retry one email** (`cc28c38`). Each failed row in the Home queue has its own **Retry** button,
+  which re-runs just that email (`POST /api/emails/{id}/retry`, which already existed). The
+  Parsing and Review detail panes use the same button, and a retry that fails again now says so
+  beside the button. Failed rows sit after the mismatches, so filter the queue to Needs review to
+  see them together. The read-only demo hides it. **Retry N** in the run bar still retries all.
+- **The whole pipeline was run with Claude as the model** because the Gemini quota was still
+  exhausted. Only three model calls were swapped for answers Claude wrote after reading the emails
+  and documents; document reading, Tesseract OCR, validation, comparison and the review rules are
+  the project's own code. **`results/` now holds that run**: 520 records, none failed (367 OK, 45
+  mismatch, 108 needs review = 96 missing attachment, 10 missing value, 2 unreadable). It replaced
+  268 records that were all quota failures, which were not kept in the repo.
+- **Stage 1 (no model)** parsed all 250 attachments: 242 text, 6 scans read with Tesseract, 2
+  corrupt PDFs. The parser settled all 7 fields on 212 of 250 by itself. The model was asked for
+  520 classifications, 135 fields on 30 text documents, and 42 fields on the 6 scans (read from the
+  page images, because Tesseract quality was 62 to 72 and it misread values like `297,750` for
+  `237,750`).
+- **`reference/claude-as-llm/`** (`e75d764`) keeps all of that reproducible: the answer sheets, the
+  scripts that build them, `stage1_parse.py`, `run_with_claude.py`, `render_scans.py` and
+  `crosscheck.py`, with a README. The runner writes to `results/claude-llm/` (git-ignored) by
+  default so it cannot touch real results; `--into-results` replaces `results/` with the usual
+  backup. The repo copies were checked to reproduce the run exactly.
+- **A rule for `reference/`**: tracked while the project is built, excluded from the image
+  (`.dockerignore`), and **after deploying it is to be untracked** (uncomment `reference/` at the
+  bottom of `.gitignore` and run `git rm -r --cached reference/` in its own commit). Written in
+  `AGENT.md`; the `.gitignore` line is already there, commented out.
+
+**Why:**
+- The owner wanted a per-email retry instead of only retry-all, and asked for the pipeline to be
+  followed end to end with Claude playing the model, which also shows how little of the work
+  actually needs one.
+
+**Findings:**
+- **Cross-check against Colt's earlier full run** (`web/report.json`), on the 126 emails with
+  documents: 122 identical, and all 45 of these mismatches are also in his run. The four
+  differences: `email_145` is a **real defect this run misses** (SI shipper `APRIL FINE PAPER
+  TRADING`, BL shipper `APRIL FINE PAPER TRADING (MIDDLE EAST) FZE`, two distinct entities), hidden
+  by the "same party plus extra detail" rule in `compare.py`; `email_411` has identical values, so
+  the other run misread it; `email_516` and `email_517` have placeholder SI values (`N/A`, `TBA`,
+  `____MT`), which this run sends to a person.
+- **`wrong_doc_type` is never produced.** It is in `schema.py` and the dataset README, but nothing
+  checks what kind of document an attachment is, so the invoice, packing-list and
+  certificate-of-origin "BL"s (`501` to `505`) come out as `missing_value`.
+
+**Decisions made:**
+- **91 "please send the draft BL" emails** (no attachments) are labelled `BL_COMPARISON` at 0.6
+  confidence, since they sit in the same threads as real BL checks, so they go to a person as
+  "attachment missing". That is 96 of the 108 review cases. Labelling them `GENERAL` would cut the
+  total from 108 to 17 review cases. Not decided by the owner; one rule in
+  `build_classify_answers.py`.
+- The reference lives in a top-level `reference/` (not `scripts/`) because it is a worked example,
+  not a tool. Its answer sheets are committed so the run can be reproduced without rebuilding them.
+- The runner defaults to a separate output folder, because its main use is demonstration.
+
+**Open questions / next steps:**
+- **`results/` is a Claude-as-the-model run, not a real-model run.** When the Gemini quota is back,
+  a real run (Start over, which keeps a `.bak` copy) will replace it. Do not present these numbers
+  as the real model's.
+- Narrow the party rule in `compare.py` to address-like suffixes so `email_145` is caught, and
+  decide whether to add a document-type check for `wrong_doc_type`.
+- Decide the label for the 91 draft-BL emails; it changes the review queue from 108 to 17.
+- Remember the reference rule after deploying (`.gitignore` and `AGENT.md`).
+- `HANDOFF.md` has 7 entries inline again against `AGENT.md`'s ~5; move the oldest to
+  `HANDOFF-archive.md` as its own small commit.
+- Still open: the Home queue counter, `DESIGN.md` section 6.2, and the untracked `results.jsonl` at
+  the repo root.
+
+**Synced through:** `e75d764` (this entry and the reference rule are committed after it)
