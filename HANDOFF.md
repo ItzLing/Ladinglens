@@ -427,3 +427,42 @@ from before the entries below.
 - `HANDOFF.md` is now 20 entries against `AGENT.md`'s ~5. Archiving is overdue.
 
 **Synced through:** `fb16662`
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (merge feat/colt, poller runs new emails only)
+
+**What changed:**
+- Merged `origin/feat/colt` into `ling-2` (`f52ad72`). Two conflicts: `HANDOFF.md` (both sides
+  appended an entry, so both are kept) and `web/report.json` (Colt's is a real, newer full run in
+  the new format, 520 emails and cases, so it replaces the converted older snapshot; the
+  dashboard now reads 148 comparison requests, 49 mismatches, 35 human review, 436 clean checks).
+  Also came in: `scripts/export_excel.py`, `scripts/feed_inbox.py`, the `data/live/` ignore, and
+  Colt's `/process` fix (`classify_email` returns a summary now).
+- `scripts/poll.py` now calls `POST /run?new_only=true` instead of `resume=true`, so each tick
+  processes only emails with no saved result (the arrivals `feed_inbox.py` drips in) and leaves
+  everything saved, failed ones included, alone. A new `--retry-failed` flag keeps the old
+  behaviour (`resume=true`). `tests/test_poll.py` covers which URL it asks for.
+- `HANDOFF.md`: the older entries were moved to `HANDOFF-archive.md` earlier in the session
+  (commit `061987d`), which Colt's entry noted as overdue.
+
+**Why:**
+- With `resume=true` a poller retried every failed email on every tick, so a model outage (the
+  Gemini 429 quota) would be re-billed every interval. New-only is what the feeder needs.
+
+**Decisions made:**
+- Took Colt's `report.json` over this branch's: newer real data beats a converted snapshot. It
+  still has no email summaries or extracted values; `python web/build_report.py` after a real
+  run fills those in.
+- Kept `--retry-failed` as an opt-in rather than dropping the old behaviour, so a scheduled
+  poller can still recover from an outage on purpose.
+
+**Open questions / next steps:**
+- Restart uvicorn after pulling. Fix the model quota before re-running (see the previous entry).
+- The scheduled-task example in `README.md` runs `poll.py --once`; add `--retry-failed` there
+  only if failed emails should be retried automatically.
+- Still open from the previous entry: the Home queue counter, `DESIGN.md` section 6.2, and the
+  untracked `results.jsonl` at the repo root.
+
+**Synced through:** `f52ad72` (this entry and the poller change are committed after it)
