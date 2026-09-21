@@ -29,6 +29,18 @@ checked.** That reason means the model API call failed, usually because the free
 quota ran out. It is not a verdict on any document. Fix the cause (another model, a new day,
 a paid key) and re-run with `?resume=true`, which retries only the failed emails.
 
-## Starting fresh
+## Adding emails, and starting fresh
 
-Delete the files in this folder, or run without `?resume=true`, which starts over.
+Three ways to run again, from safest to most destructive:
+
+- **New emails only:** `POST /run?new_only=true` (the **Run N new** button). It processes only
+  the emails that have no saved result, such as ones you added to the inbox since the last run,
+  and leaves every saved result alone, failed ones included. Nothing already done goes back
+  through the model.
+- **Resume:** `POST /run?resume=true` (**Retry N**). Skips what finished, retries what failed,
+  and does any new emails.
+- **Start over:** `POST /run` (**Start over**). Replaces `results.jsonl` and runs every email
+  again. Before it does, it copies the old file to `results.jsonl.<timestamp>.bak`, but only if
+  it holds at least one real verdict, so a run of failures never pushes a good backup out. The
+  backups are ignored by git; delete them when you no longer want them. If MongoDB is used, its
+  copy of the results is replaced too; the `.bak` file is the copy to restore from.

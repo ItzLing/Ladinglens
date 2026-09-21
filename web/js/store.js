@@ -214,6 +214,26 @@ export function takeBack(map, emailId) {
   return next;
 }
 
+/**
+ * What the run bar can offer, from the report on screen.
+ * `left` is the emails with no saved result yet: new ones added to the inbox, or ones a stopped
+ * run never reached. `startOver` is the wording of the confirmation for a fresh run, which
+ * replaces the saved results, so it has to say so.
+ */
+export function runPlan(report) {
+  const s = report?.summary ?? {};
+  const full = report?.scope === "full";
+  const saved = full ? s.total ?? 0 : 0;
+  const inbox = s.inbox_total ?? s.total ?? 0;
+  const left = full && saved > 0 ? Math.max(0, inbox - saved) : 0;
+  const failed = s.failed ?? 0;
+  const keep = left > 0 ? ' To keep them, cancel and use "Run new" instead.' : failed > 0 ? ' To keep the good ones, cancel and use "Retry" instead.' : "";
+  const startOver = saved > 0
+    ? `Start over on ${inbox} emails? This replaces the ${saved} saved results (a backup copy is kept) and uses model quota.${keep}`
+    : `Run the pipeline on ${inbox || "all"} emails? This uses model quota.`;
+  return { saved, left, failed, startOver };
+}
+
 /** Emails grouped by label for the folded Report list, in label order, empty groups left out. */
 export function reportGroups(rows, { status = "", q = "" } = {}, order = []) {
   const pool = rows.filter((r) => (!status || r.status === status) && matchesQuery(r, q));

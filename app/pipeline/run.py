@@ -229,6 +229,7 @@ def run_pipeline(
     checkpoint=None,
     resume: bool = False,
     concurrency: Optional[int] = None,
+    new_only: bool = False,
 ) -> tuple[dict, dict]:
     """Process the inbox, or only its first `limit` emails.
 
@@ -240,6 +241,11 @@ def run_pipeline(
     Returns (submission, classify_records). classify_records pairs each email's
     raw self-reported confidence with its computed verdict, so the confidence
     threshold can be re-swept offline instead of re-spending API quota.
+
+    `resume` skips the emails already finished but retries the ones that failed.
+    `new_only` goes further: it also leaves the failed ones alone, so only emails with
+    no saved result at all are processed. That is what to use after adding emails to
+    the inbox. It implies resume.
     """
     if concurrency is None:
         concurrency = int(os.environ.get("LLM_CONCURRENCY", "8"))
@@ -248,7 +254,11 @@ def run_pipeline(
     if limit is not None:
         emails = emails[:limit]
 
+    resume = resume or new_only
     done, failed = checkpoint.load() if checkpoint is not None and resume else ({}, {})
+    if new_only:
+        done.update(failed)  # a failed email already has a saved result: leave it as it is
+        failed = {}
     if checkpoint is not None and not resume:
         checkpoint.reset()
 

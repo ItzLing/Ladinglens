@@ -54,6 +54,55 @@ def comparison_email(email_id="email_004", suffix="txt"):
     }
 
 
+def _general(email_id):
+    return ComparisonResult(email_id=email_id, category=EmailCategory.GENERAL)
+
+
+class NewEmailsTests(unittest.TestCase):
+    """Adding emails to the inbox must not re-run the ones already saved."""
+
+    def setUp(self):
+        self.emails = [{"email_id": f"email_00{n}", "attachments": []} for n in range(1, 5)]
+        # 001 has a real result, 002 failed on the model API, 003 and 004 are new
+        self.checkpoint = MemoryCheckpoint([
+            run._record(_general("email_001")),
+            run._record(run._processing_error("email_002", "classification")),
+        ])
+
+    def run_it(self, **options):
+        seen = []
+
+        def process(email, _inbox):
+            seen.append(email["email_id"])
+            return _general(email["email_id"])
+
+        with patch.object(run, "process_email", side_effect=process):
+            submission, _cache = run.run_pipeline(FakeInbox(self.emails), checkpoint=self.checkpoint, concurrency=1, **options)
+        return seen, submission
+
+    def test_new_only_processes_just_the_emails_with_no_saved_result(self):
+        seen, submission = self.run_it(new_only=True)
+        self.assertEqual(seen, ["email_003", "email_004"])
+        self.assertEqual(list(submission), ["email_001", "email_002", "email_003", "email_004"])
+        # the failed one is left as it was, not retried and not lost
+        self.assertEqual(submission["email_002"]["review_reason"], "processing_error")
+        self.assertEqual([r["email_id"] for r in self.checkpoint.records], ["email_001", "email_002", "email_003", "email_004"])
+
+    def test_resume_also_retries_the_failed_ones(self):
+        seen, _submission = self.run_it(resume=True)
+        self.assertEqual(sorted(seen), ["email_002", "email_003", "email_004"])
+
+    def test_new_only_with_nothing_new_makes_no_model_calls(self):
+        self.emails = self.emails[:2]
+        seen, submission = self.run_it(new_only=True)
+        self.assertEqual(seen, [])
+        self.assertEqual(list(submission), ["email_001", "email_002"])
+
+    def test_a_fresh_run_still_starts_over(self):
+        seen, _submission = self.run_it()
+        self.assertEqual(sorted(seen), ["email_001", "email_002", "email_003", "email_004"])
+
+
 class PipelineReliabilityTests(unittest.TestCase):
     def test_stopping_leaves_the_rest_for_a_resume_and_keeps_what_finished(self):
         emails = [{"email_id": f"email_00{n}", "attachments": []} for n in range(1, 5)]

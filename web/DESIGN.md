@@ -162,7 +162,7 @@ UI falls back to showing only the differing fields for them.
 | `GET /api/status` | Running or idle, progress, failed count, app version, storage backend |
 | `GET /api/db/status` | Backend, connected or not, database name, collection counts (credentials never shown) |
 | `GET /api/db/collections/{name}` | Read-only page of documents, filterable by `email_id`, limit capped |
-| `POST /run` | Existing. "Retry failed" and "Continue" call it with `resume=true` |
+| `POST /run` | Existing. "Retry" calls it with `resume=true`; "Run N new" with `new_only=true` (only emails with no saved result, everything saved left alone); "Start over" with neither, which first keeps a `.bak` copy of the old results |
 | `POST /api/run/stop` | Stop the run in progress after the emails already being processed; 409 when nothing is running. What finished is kept, so `resume=true` carries on. `/api/status` shows `stopping` meanwhile |
 
 The existing `/run` and `/status` stay, since `scripts/poll.py` uses them. Collection names are
@@ -190,9 +190,10 @@ append-only, overlaid on the model output.
   Review opens a short "Design in progress" page for now.
 - **Header:** "Ladinglens" as the title. On the right, a **small** run control: a status dot
   with "Idle" or "212 of 520", a **Stop** button while a run is going (it says "Stopping…" until
-  the emails in flight finish), **Continue (n)** for the emails a stopped run has not reached,
-  **Retry failed (n)** once everything has been reached, and a **Run** button (which asks for
-  confirmation because it spends model quota). It is deliberately compact: the
+  the emails in flight finish), **Run N new** for the emails with no saved result yet (new
+  ones added to the inbox, or ones a stopped run did not reach), **Retry N** for the failed
+  ones, and **Start over**. Start over confirms in plain words that it replaces the saved
+  results (a backup copy is kept) and spends model quota. It is deliberately compact: the
   owner will confirm with a friend what it should do.
 - Under 800 px the rail becomes a bottom bar and the two panes stack, with a Back control.
 - Routes: `#/` Home, `#/parsing`, `#/parsing/{id}`, `#/review`, `#/report`, `#/data`.

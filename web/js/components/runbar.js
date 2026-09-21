@@ -1,5 +1,6 @@
 import { add, h, clear, announce } from "../util/dom.js";
 import { icon } from "../util/icons.js";
+import { runPlan } from "../store.js";
 
 const POLL_MS = 2000;
 
@@ -50,6 +51,10 @@ export function mountRunbar(host, { api, getReport, onDone }) {
       } else {
         announce("The run finished.");
       }
+      if (result?.backup_path) {
+        const kept = String(result.backup_path).split(/[\\/]/).pop();
+        message = `${message ? `${message} ` : ""}Previous results kept in ${kept}.`;
+      }
     } catch (err) {
       message = err.status === 409 ? "A run is already in progress." : err.message;
     }
@@ -77,13 +82,13 @@ export function mountRunbar(host, { api, getReport, onDone }) {
     render();
   }
 
-  function continueRun() {
-    launch({ resume: true, limit: null });
+  // only the emails with no saved result; everything saved, failed ones included, is left alone
+  function runNew() {
+    launch({ newOnly: true, limit: null });
   }
 
   function runAll() {
-    const total = getReport()?.summary?.inbox_total ?? "all";
-    if (confirm(`Run the pipeline on ${total} emails? This uses model quota.`)) launch({ resume: false });
+    if (confirm(runPlan(getReport()).startOver)) launch({ resume: false });
   }
 
   function render() {
@@ -92,10 +97,7 @@ export function mountRunbar(host, { api, getReport, onDone }) {
       add(host, h("span", { class: "dot demo" }), h("span", {}, "Demo, read-only"));
       return;
     }
-    const summary = getReport()?.summary ?? {};
-    const failed = summary.failed ?? 0;
-    // emails a stopped or interrupted full run has not reached yet
-    const left = getReport()?.scope === "full" && summary.total > 0 ? Math.max(0, (summary.inbox_total ?? 0) - summary.total) : 0;
+    const { left, failed } = runPlan(getReport());
     const label = status?.stopping
       ? "Stopping…"
       : running()
@@ -109,13 +111,13 @@ export function mountRunbar(host, { api, getReport, onDone }) {
         ? h("button", { class: "icon-btn stop", type: "button", title: "Stop after the emails already being processed. What has finished is kept.", disabled: status?.stopping ? true : null, onclick: stopRun }, icon("stop"), "Stop")
         : null,
       !running() && left > 0
-        ? h("button", { class: "icon-btn", type: "button", title: "Carry on with the emails this run has not reached yet, and retry any that failed", onclick: continueRun }, icon("play"), `Continue ${left}`)
+        ? h("button", { class: "icon-btn", type: "button", title: "Process only the emails with no saved result yet: new ones, or ones a stopped run did not reach. Everything saved, failed ones included, is left alone.", onclick: runNew }, icon("play"), `Run ${left} new`)
         : null,
-      !running() && left === 0 && failed > 0
-        ? h("button", { class: "icon-btn", type: "button", title: "Retry the emails that failed on the model API", onclick: retryFailed }, icon("refresh"), `Retry ${failed}`)
+      !running() && failed > 0
+        ? h("button", { class: "icon-btn", type: "button", title: "Retry the emails that failed on the model API. Also processes any new emails.", onclick: retryFailed }, icon("refresh"), `Retry ${failed}`)
         : null,
       !running()
-        ? h("button", { class: "icon-btn", type: "button", "aria-label": "Run the pipeline", title: "Run the pipeline", onclick: runAll }, icon("play"))
+        ? h("button", { class: "icon-btn", type: "button", "aria-label": "Start over: run every email again", title: "Start over: run every email again. Replaces the saved results, keeping a backup copy.", onclick: runAll }, icon("refresh"), "Start over")
         : null,
       message ? h("span", { class: "muted" }, message) : null,
     );

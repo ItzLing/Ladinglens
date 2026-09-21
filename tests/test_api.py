@@ -234,6 +234,14 @@ class RetryTests(ApiCase):
         finally:
             run_state.lock.release()
 
+    def test_run_passes_new_only_through_and_defaults_to_off(self):
+        with mock.patch.object(main, "_do_run", return_value={}) as do_run:
+            self.assertEqual(self.client.post("/run?new_only=true").status_code, 200)
+            self.client.post("/run?resume=true")
+            self.client.post("/run")
+        self.assertEqual([c.args for c in do_run.call_args_list],
+                         [(None, False, True), (None, True, False), (None, False, False)])
+
     def test_retrying_an_unknown_email_is_a_404_and_frees_the_lock(self):
         self.assertEqual(self.client.post("/api/emails/email_999/retry").status_code, 404)
         self.assertFalse(run_state.lock.locked())
