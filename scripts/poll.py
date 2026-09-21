@@ -1,7 +1,7 @@
 """Poll the inbox on an interval: process anything new, refresh the dashboard.
 
 Each tick calls POST /run?resume=true, which skips emails already in
-results.jsonl, picks up any that have appeared since, and retries the ones that
+results/results.jsonl, picks up any that have appeared since, and retries the ones that
 previously failed on the API. A tick that finds nothing new costs no API calls.
 
     python scripts/poll.py                 # loop every 5 minutes

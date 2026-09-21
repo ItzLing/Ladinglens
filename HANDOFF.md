@@ -504,3 +504,591 @@ emails caught.
   are scratch run data -- `git rm --cached` when convenient.
 
 **Synced through:** `938aa57`
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (PDF / Word / Excel parsing + OCR)
+
+**What changed:**
+- New `app/pipeline/read_document.py`: turns any attachment into plain text before
+  `extract_fields()` sees it. `.txt` as is; `.docx` (paragraphs + tables) and `.xlsx` (every
+  non-empty row) parsed locally; `.pdf` via its text layer; a PDF with **no** text layer is a
+  scan, so its page image is sent to a vision model to transcribe (OCR).
+- `run.py`: removed the ".txt only" gate that sent every other format to
+  `needs_review(unreadable)`; attachments now go through `read_document`. Corrupt / empty /
+  unsupported files raise `DocumentUnreadableError` (a `ValueError`) -> still `unreadable`; an
+  API failure during OCR raises `LLMUnavailableError` -> `processing_error`, as before.
+- `llm_client.py`: `_generate` now takes messages + an optional JSON mode; added
+  `call_vision_text()` (image + prompt -> plain text) and `vision_model_name()`. `call_json`
+  behaves exactly as before. New optional env var `LLM_VISION_MODEL` (defaults to `LLM_MODEL`).
+- `compare.py`: normalization now also ignores address separators (`,` `;` `|`), thousands
+  commas, and the `KG`/`KGS` unit on `gross_weight_kg`. See Decisions.
+- `web/build_report.py` reads documents via `read_document(..., ocr=False)` so the dashboard
+  can show PDF/Word/Excel text and cached scans; it now calls `load_dotenv` (see Decisions).
+  `web/index.html`: the "unreadable" banner no longer claims PDF/Word/Excel are unsupported.
+- `requirements.txt`: `pypdf`, `python-docx`, `openpyxl`, `pillow`. `.gitignore`: `ocr_cache/`.
+  `.env.example` + `README.md` document the new behavior.
+
+**Why:**
+- 58 of 250 attachments were non-txt and 54 of 150 comparison requests never reached
+  comparison (previous entry) -- the largest block of unclaimed score. The brief lists
+  "scanned documents" as a requirement and explicitly allows OCR, a vision LLM, or both.
+
+**What the data actually contains (checked, not assumed):**
+- 28 PDFs: 20 have a clean text layer (no OCR needed), **6 are image-only scans**
+  (`email_512`-`514`, SI + BL each, clean rendered text), **2 are truncated ~770-byte files**
+  (`email_511_BL`, `email_515_BL`; their emails say "the BL file will not open").
+- 8 docx (bilingual EN/CN labels in a table) and 22 xlsx (label | value rows, weight as a
+  bare number). All parse.
+
+**Decisions made:**
+- **Vision LLM for OCR, not Tesseract/EasyOCR.** No new system binary or heavy model wheel
+  (unclear support on Python 3.14), it reuses the existing provider, and the transcript then
+  goes through the same `extract_fields()` path as every other format. Cost: OCR needs a
+  vision-capable model -- Gemini is, a local `llama3.1` is not (hence `LLM_VISION_MODEL`).
+- **Transcribe to text, then extract** (two calls) rather than image -> fields (one call): the
+  transcript is inspectable and cached, and one extraction path is easier to reason about.
+- **OCR transcripts cached in `ocr_cache/`**, keyed on the file bytes + prompt + vision model,
+  so a rerun doesn't re-spend quota and a model/prompt change can't serve stale text.
+- **`compare.py` normalization widened -- this was a real bug, not polish.** Once xlsx and
+  docx were readable, `email_055` (xlsx SI vs docx BL) reported 4 mismatches that were all
+  formatting: `243588` vs `243,588`, and address parts joined by `;`/`|` in the xlsx but `,`
+  in the docx. It only removes formatting; words and digits are never altered, and real
+  differences (weight digit, name, port, container) are still caught. Also applies to `.txt`,
+  where it can only remove separator-only false positives.
+- Any exception from pypdf/python-docx/openpyxl on a damaged file is caught **at the parser
+  boundary only** and re-raised as `DocumentUnreadableError`; API errors are never swallowed.
+- Scan pages capped at `MAX_OCR_PAGES = 5`; SI/BL documents are one page.
+
+**Verification:**
+- All 250 attachments run through `read_document(ocr=False)`: 242 parse; 2 corrupt PDFs ->
+  `unreadable`; 6 scans wait for OCR. No API used.
+- Live OCR on all 6 scans (Gemini); `512_SI` checked field by field against the image.
+- Live end-to-end: `email_059` (text PDF) and `email_005` (xlsx vs xlsx) -> `OK`.
+- With the LLM stubbed: 511/515 -> `unreadable`; 512-514 -> read from cache with the API
+  pointed at a dead port (proves cache + no-API path); 055 -> `OK`.
+- **Not verified:** any score. `data/` here has no `ground_truth.json`, and free-tier quota
+  ran out mid-session, so there is no full run and no self-evaluation number for this change.
+
+**Open questions / next steps:**
+- **Quota:** the API returned `429 ... limit: 20, model: gemini-3.6-flash` (free tier, per day)
+  -- far below the 500/day noted in `.env.example`/`README.md`. Testing OCR alone used ~6.
+  A full run needs ~724 calls, so expect to need another model, a paid key, or Ollama.
+- **Run the full pipeline and score it** when quota allows -- this change should move the 54
+  stuck comparison requests, but that is unmeasured. Use `?resume=true` only if the model
+  is unchanged (see previous entries).
+- **OCR misreads can create false mismatches.** The prompt asks for `[illegible]` where the
+  model can't read text, but nothing yet turns an `[illegible]` value into
+  `needs_review(missing_value)`. Worth doing if scans get messier than the clean ones here.
+- `web/build_report.py` still hard-codes `INBOX_SOURCE = "data/data_v2"`; this checkout only
+  has `data/inbox` + `data/attachments`, so it can't be run here as-is.
+- `HANDOFF.md` is ~11 entries; archive the old ones into `HANDOFF-archive.md` as its own commit.
+
+**Synced through:** `aa38e80` (committed as `8983325`, `6d20a09`, `ed6c5ce`, `aa38e80`, one per task)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (OCR fallback ladder in extract.py)
+
+**What changed:**
+- `app/pipeline/extract.py`: `extract_document(inbox, path, label)` now runs the 7-step ladder
+  from the refined design (ladder is documented at the top of the file). `extract_fields()` and
+  its prompt are unchanged -- they are step 5's "LLM parses clean text".
+- New `app/pipeline/ocr.py`: `pytesseract` per-word OCR, `field_confidence` = **minimum** over a
+  field's words, page quality = mean, keyword label lookup (`keyword_hits`), and `label_line`
+  / `text_lines` for reading the raw "Label: value" line of any text.
+- New `app/pipeline/validate.py`: weight (number, KG unit, 100-1,000,000), container count
+  (leading integer, 1-200), names/ports (has letters, no stray symbols, not a placeholder such
+  as `TBA`/`N/A`). Limits were set from the dataset (20,065-360,415 kg; 1-16 containers).
+- `read_document.py` rewritten around `load_document()` -> `LoadedDocument(text | images)`.
+  Adds `.jpg/.jpeg/.png/.tif/.tiff` (multi-page TIFF supported). `read_document(inbox, path)`
+  remains for the dashboard and now uses local OCR; its `ocr=` argument is gone.
+- `llm_client.py`: `call_vision_text` replaced by `call_vision_json`.
+- `schema.py`: `FieldIssue` (document, file, field, reason, detail, source, value, evidence),
+  `FieldIssueReason` (not_found / invalid_value / unreadable), `ExtractionResult`, and
+  `ComparisonResult.field_issues`.
+- `run.py`: uses `extract_document`; any unresolved field -> `needs_review` /
+  `missing_value` with `field_issues` attached, never compared. `_record` writes them to
+  `results.jsonl`; `web/build_report.py` passes them into `report.json`.
+- New `tests/test_extract_ladder.py` (33 stdlib `unittest` tests, all offline).
+  `python -m unittest discover -s tests`. Added to `AGENT.md`.
+- `requirements.txt` + `pytesseract`; `.env.example` + `OCR_MIN_CONFIDENCE`, `TESSERACT_CMD`;
+  README rewritten for the ladder; `ocr_cache/` and its `.gitignore` entry removed.
+
+**Why:**
+- The design was refined after the last entry: OCR should be a Python library with per-field
+  confidence, vision only per low-confidence field, and every field validated, with unresolved
+  fields reported with evidence rather than guessed. The previous entry's OCR (a vision LLM
+  transcribing the whole page, cached) did not match that, so it is **superseded** (that entry
+  is left as written; the log is append-only).
+
+**Design vs code, before this change (gap analysis):**
+- Already correct: step 1 (text extraction first, PDF/Word/Excel/txt), step 5's LLM text parse,
+  a `needs_review`/`missing_value` route.
+- Missing: Python OCR, image formats, per-field confidence, per-field vision, validation,
+  per-field reason + evidence (run.py only had "any field None").
+
+**Decisions made:**
+- **Text documents stay LLM-first.** The keyword pass exists only inside the OCR path. Measured
+  on the corpus: keywords alone find all 7 fields in just 124 of 242 documents (PDFs put values on
+  the next line; many label variants), so the LLM is still needed. Making keyword-first the
+  default for text would save calls but risks the current score -- left as an open decision.
+- **One vision call per document**, listing only the fields that need it, not one call per
+  field. Same routing, far fewer calls.
+- **"OCR confidence is fine" for a field the keyword pass did not find** is judged by the
+  page's mean word confidence >= `OCR_MIN_CONFIDENCE`. Below it, the field goes to vision.
+- **No Tesseract -> every field goes to vision** rather than failing. Scans still work
+  (verified live), at one vision call per document.
+- **Validation also checks the raw source line for text documents.** Live, the model turned
+  `Port of Loading: ____MT` into `MT`, which is a valid-looking string; only the raw line
+  exposes it. On the corpus this rejects 5 of 1,564 raw values, all in `email_516`-`518`, the
+  emails whose own body says fields were left blank -- zero false positives.
+- Unresolved fields all map to `review_reason=missing_value` in the submission (the hackathon's
+  enum has no finer reason); the finer reason lives in `field_issues`, which stays out of
+  `output.json` so it keeps the `sample_submission.json` shape.
+- A text document has no page image, so a validation failure there ends the ladder in
+  `needs_review` (no vision fallback).
+- Kept the OCR-cache removal simple: no cache. Vision replies are not cached.
+
+**Verification:**
+- 33 tests pass. Mutation-checked: swapping min for mean, disabling validation, and a
+  threshold of 0 each make specific tests fail.
+- Live (Gemini `gemini-3.1-flash-lite`; `gemini-3.6-flash` is capped at 20 requests/day on this
+  key): both `email_512` scans -> all 7 fields correct via the vision branch; `email_516`
+  (`N/A` weight), `517` (`____MT`, `TBA`), `518` (`N/A`, `____MT`) -> flagged with the field's own
+  line as evidence; `email_059` (text PDF) -> 7/7, no false alarm.
+- **Not verified:** any real Tesseract output. **Tesseract is not installed on this machine**
+  (`winget install --id UB-Mannheim.TesseractOCR` needs an install, which I did not do without
+  asking), so steps 2-3 and 5 only run against mocks. `OCR_MIN_CONFIDENCE=80` is a placeholder.
+  No score either -- there is no `ground_truth.json` locally.
+
+**Open questions / next steps:**
+- **Install Tesseract and calibrate `OCR_MIN_CONFIDENCE`.** The 6 dataset scans are clean
+  rendered text, so they won't exercise the threshold; make blurred / JPEG-compressed / skewed
+  versions to see where per-word confidence actually falls.
+- **OCR library:** `pytesseract` chosen as you suggested (pure-Python wrapper, needs the
+  Tesseract program). Alternatives (RapidOCR/EasyOCR) need onnxruntime/torch wheels that may not
+  exist for Python 3.14. The engine call is isolated in `ocr.ocr_lines`, so swapping is one
+  function.
+- **Vision model.** Any OpenAI-compatible vision model via `LLM_VISION_MODEL`. Gemini works;
+  `gemini-3.1-flash-lite` is the cheap one that had quota. Decide the cost-sensitive choice.
+- **Keyword-first for text documents?** Would cut LLM calls; needs a ground-truth comparison
+  first (see Decisions).
+- **Latent bug, not fixed:** `extract_fields` builds `ShipmentFields(**reply)`, so a numeric
+  JSON value (xlsx weights are bare numbers, e.g. `341715`) raises a pydantic `ValueError`,
+  which `run.py` files as `unreadable`. Not seen in live runs, but a one-line
+  `coerce_numbers_to_str` on `ShipmentFields` would remove the risk.
+- **Design inconsistencies for you to decide** (all outside `extract.py`, so not touched):
+  - `scripts/poll.py` + `GET /status` + the 409 run lock (teammate's "scheduling" commit) vs
+    "no streaming pipeline". It is not Airflow/Spark/n8n, but it is scheduling; keep or drop?
+  - `web/` is a static HTML dashboard, while the stack says Streamlit. `web/index.html` also
+    doesn't render `field_issues` yet.
+  - `README.md` still says Gemini's free tier is 500 requests/day/model; `gemini-3.6-flash`
+    returned a limit of 20.
+- `HANDOFF.md` is now ~12 entries; archive the old ones as its own commit.
+
+**Synced through:** `c456daf` (committed by task: `65b57e0`, `6089248`, `e68e4f3`, `8d971e6`, `f283634`, `ccdd548`, `654d1e0`, `c456daf`)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (Tesseract verified against the real scans)
+
+**What changed:**
+- `app/pipeline/ocr.py`: `ocr_lines()` now calls `ocr_available()` itself. The Tesseract path
+  (`TESSERACT_CMD`) was only being set as a side effect of `ocr_available()`, so anything calling
+  `ocr_lines()` directly got `TesseractNotFoundError`. The pipeline was unaffected (it always
+  called `ocr_available()` first). Regression test added (34 tests, all pass).
+- Local `.env` (gitignored): `TESSERACT_CMD=F:\Apps\Tesseract-OCR\tesseract.exe`.
+
+**Environment facts:**
+- Tesseract **5.5.3** is installed at `F:\Apps\Tesseract-OCR` (161 languages). It is not on
+  `PATH` and not in the default `C:\Program Files` folder, so `TESSERACT_CMD` is required on this
+  machine.
+- `pip install tesseract` installs an **unrelated astronomy library** ("Tesselation based
+  Recovery of Amorphous halo Concentrations"), not the OCR engine. It is in `.venv` and does no
+  harm, but can be removed with `pip uninstall tesseract`. The OCR engine is a Windows program;
+  pip only provides the `pytesseract` wrapper.
+
+**Verification (real Tesseract, real scans):**
+- `email_512`-`514` (SI + BL): page confidence only **62-72** and per-field 10-69. It misreads
+  `6 x 40'HC` as `8x 40}` (conf 10) and `128,544` as `128.544`; OCR also often drops the colon
+  after a label, so the keyword pass finds 0-2 of 7 fields.
+- So at `OCR_MIN_CONFIDENCE=80` (kept, per the owner) every field goes to the vision model.
+  End to end on all 6 documents: **7/7 fields, all correct, 0 issues, 6 vision calls** (one per
+  document), on `gemini-3.1-flash-lite`. Nothing Tesseract misread was accepted.
+
+**Findings (not acted on):**
+- **Upscaling before OCR helps.** Page confidence goes ~72 -> ~89 at 2x-3x and the text is nearly
+  right (`Containers 6 x 40'HC`, `Gross Weight 128,544 KG`). But it is not clean: per-field
+  confidence stays erratic (26-89), 3x is worse than 2x on some documents, and dropped colons
+  still cap keyword hits at 3/7. Worth a proper experiment when the threshold is calibrated; it
+  would cut vision calls, not remove them.
+- The keyword matcher requires a colon. Accepting a missing/garbled one ("Shipper. ACME") would
+  raise keyword hits, at the risk of false matches.
+
+**Decisions / deferred:**
+- `OCR_MIN_CONFIDENCE` stays 80; owner will verify later.
+- Left for later, as instructed: the scheduling/`poll.py` and static-dashboard-vs-Streamlit
+  questions, and the numeric-JSON `ShipmentFields` coercion bug (see previous entry).
+- "Keyword-first for text documents" is still an open, undecided idea (explained to the owner,
+  who was unsure what it meant): use the deterministic label lookup as the *first* extractor
+  for text files too, and call the LLM only for fields it misses. It would save LLM calls but
+  finds all 7 fields in only 124 of 242 documents, so the LLM stays primary for now.
+
+**Open questions / next steps:**
+- Calibrate `OCR_MIN_CONFIDENCE` on degraded scans (blur, JPEG, skew); the dataset's own scans
+  are clean, and even they score low at native resolution.
+- Try 2x upscaling in `ocr_lines()`, measured against the vision-call count.
+
+**Synced through:** `c456daf` (committed by task: `65b57e0`, `6089248`, `e68e4f3`, `8d971e6`, `f283634`, `ccdd548`, `654d1e0`, `c456daf`)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (results/ folder, one inbox path, clean-up)
+
+**What changed:**
+- New `results/` folder: every pipeline output now goes there (`results.jsonl`, `output.json`,
+  `classify_cache.json` and their `.sample` variants). Only `results/README.md` is tracked; it
+  explains each file and how to read a run. `.gitignore`: `results/*` + `!results/README.md`
+  replaces the three root-level patterns.
+- New `app/paths.py` is the single source for `ROOT_DIR`, `DATA_DIR`, `RESULTS_DIR`,
+  `results_file(name)` and `inbox_source()`. `main.py` (incl. `/status`) and `build_report.py`
+  use it, so they cannot drift apart again. `inbox_source()` reads `INBOX_SOURCE` (default
+  `data/`) and resolves a relative folder from the repo root, not the cwd; a URL is untouched.
+- `web/build_report.py`: **fixed a bug** -- it hard-coded `data/data_v2`, which does not exist
+  for anyone whose data is in `data/inbox` + `data/attachments`. It now uses `inbox_source()`,
+  reads `results/results.jsonl`, and gains `--sample` (for a `?limit=N` run). It exits with a
+  clear message if there are no results yet, and **warns when records are `processing_error`**.
+- Stale `data_v2` mentions fixed in `README.md`, `.env.example`; results paths fixed in
+  `README.md`, `web/README.md`, `scripts/poll.py`, and the scoring commands
+  (`results/output.json`). 6 new tests (`tests/test_paths.py`); 40 pass.
+- Cleared the branch of result clutter: deleted the untracked run files, and `git rm`'d the two
+  tracked scratch dumps `results.jsonl.bak` and `results.jsonl.afterretry` (recoverable from
+  commit `8ce18bb`: `git show 8ce18bb:results.jsonl.bak`).
+
+**Why (what the owner hit):**
+- They ran the pipeline and could not tell what it output. It output nothing useful: all 45
+  records in `results.jsonl` and all 20 in `results.sample.jsonl` were `NEEDS_REVIEW` /
+  `processing_error`, i.e. every email failed at the API (the 20/day quota on
+  `gemini-3.6-flash`). Nothing in the repo said so, which is why the build-report warning and
+  `results/README.md` were added.
+- Results were scattered across the repo root, and the inbox folder name disagreed between the
+  loader (`inbox/`, `attachments/`), the README (`data_v2/`) and `build_report.py`.
+
+**Decisions made:**
+- **The inbox layout is `<INBOX_SOURCE>/inbox/` + `<INBOX_SOURCE>/attachments/`**, fixed by
+  `data/loader.py`. `INBOX_SOURCE=data` is the default everywhere. `data_v2` survives only in
+  `.gitignore` (`data/data_v2/`), deliberately: it protects `ground_truth.json` for a teammate
+  who has the organizer bundle.
+- **`web/report.json` stays in `web/`, and stays tracked.** The dashboard is a static page
+  served from `web/` and fetches `report.json` relative to itself; serving from the repo root to
+  reach `results/` would also expose `.env` over `http.server`. It is also the data behind the
+  Vercel deploy (`web/README.md`), so deleting it would break that. It is the one output not in
+  `results/`, and `results/README.md` says so.
+- Kept the file names inside `results/` (no rename), so `resume` and the docs still line up.
+
+**Verification:**
+- Real 5-email run on `gemini-3.1-flash-lite`: 4 `OK`, 1 `MISMATCH` (`email_004`: consignee,
+  notify_party), 0 `processing_error`, all files written to `results/`, none at the repo root.
+  `build_report.py --sample` (output redirected to scratch, shipped `report.json` untouched)
+  read `data/inbox`, attached SI/BL text, and reported the same counts.
+
+**Open questions / next steps:**
+- **The dashboard UI needs redoing** (owner: "terrible"). Note the stack says Streamlit while
+  `web/` is a static page, and it does not show `field_issues` yet -- decide direction first.
+- `web/report.json` is the old 520-email report from an earlier run; regenerate it after a real
+  full run.
+- **A full run still needs quota.** `gemini-3.6-flash` allows 20 requests/day on this key; a full
+  run is ~724 calls. Use another model, a paid key, or Ollama.
+- `results/` now holds 3 real sample files from the 5-email check; delete them freely.
+
+**Synced through:** `8715675` (committed by task: `d2dc96b`, `120407d`, `a3f5a1f`, `8715675`, then docs)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (UI plan and design, no code)
+
+**What changed:**
+- New `web/DESIGN.md`: the implementation plan and design for the new JavaScript + CSS UI.
+  No code written yet.
+
+**Why:**
+- The owner called the current dashboard "terrible" and asked for a JS + CSS UI, plan first.
+  Reading the brief showed the real gap is not looks: it asks for human review ("let a person
+  confirm or correct it, then update the report"), visible failures with retries, all 7 fields
+  side by side, and the sentence "No mismatch detected." The current page is read-only,
+  overview-first, and only shows mismatched fields.
+
+**Decisions made (recommended, awaiting owner approval):**
+- **Stack: plain JS ES modules + CSS, no build step, served by FastAPI at `/`.** This
+  **supersedes the earlier "Streamlit frontend" line** in the stack confirmation. The same
+  UI falls back to a read-only mode over `report.json` when there is no API, so the Vercel demo
+  keeps working.
+- **Human decisions are an append-only overlay** (`results/reviews.jsonl`); model output is never
+  edited. After a review, `compare.py` recomputes the verdict, so comparison stays deterministic.
+- **Triage-first layout** (queue + case pane). The old tiles and category bars shrink to a strip
+  of status counts, consistent with "no analytics dashboard" from the earlier scope statement.
+- Keep the current design tokens (warm neutrals, blue accent, semantic status colours, light and
+  dark); refine rather than restart.
+- Wireframe of the main screen was shown in chat (not saved as a file).
+
+**Backend prerequisites found (must come first):**
+- **Run records do not keep the accepted SI/BL field values.** `results.jsonl` holds only
+  `mismatches` and `field_issues`, so neither an all-7-fields view nor finishing a review is
+  possible yet. Fix: add `extracted` to `ComparisonResult` (B1 in the plan).
+- "Latest record per email" logic exists in both `run.py` and `build_report.py`; the plan
+  consolidates it into `app/results_store.py`.
+
+**Open questions / next steps (owner to decide; see `web/DESIGN.md` section 10):**
+1. Is review write-back in scope? It is most of the work, but the brief asks for it.
+2. Reviewer identity: none, or an optional name?
+3. May a reviewer edit only flagged fields (recommended) or any field?
+4. Replace the old page in phase 1 (recommended) or keep it until parity?
+5. Keep the read-only Vercel demo?
+- Testing plan: `node:test` for pure JS (Node 24 is installed), Python tests for the review
+  rules and API (`httpx` is not installed; add it as a dev dependency or call routes directly),
+  and a browser walkthrough of each flow.
+- Build order: phase 0 backend, then shell and data, queue and case, evidence and review,
+  run and retry, polish.
+
+**Synced through:** `1493339` (merge of PR #1; plan left uncommitted for review)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (owner's tab 1 and 2 draft merged into the UI plan)
+
+**What changed:**
+- `web/DESIGN.md` restructured around the owner's hand-drawn draft ("Hackathon design.pdf",
+  one page, two wireframes). No code written.
+
+**What the draft shows:**
+- App shell: left icon rail with Logo, Parsing, Review (open book), Report (bar chart), Database.
+- Tab 1 Home: "Ladinglens" + `v0.0.1` badge, Features (OCR, LLM, ML), tagline "Quick, reliable
+  email verification. Classify, extract data & compare. All around help, every day, every time."
+- Tab 2 Parsing: list on the left with tabs "Need attention" / "All emails"; right pane with
+  "Confidence score", "Summary of email", "Groups: Shipping Instruction / Bill of Lading", then
+  "Email context & detail". Review, Report and Database are icons only, with no drafts yet.
+- The PDF is a vector export with no text layer, so it had to be rendered to be read
+  (`pypdfium2`, installed into `.venv` for that only; it is **not** in `requirements.txt`).
+
+**Decisions made in the plan:**
+- **Parsing is for inspecting, Review is for acting.** Parsing is read-only over any email;
+  Review lists only cases awaiting a person and holds the evidence panel and form. This keeps the
+  draft's tab structure and the earlier human-review design. The earlier three list tabs became
+  the draft's two; "mismatches only" is a filter.
+- Home is the landing screen (per the draft). Two additions the sketch does not have, both
+  marked as removable: an "N emails need attention" line on Home, and the run status and Retry
+  in the header. The Review icon carries a badge count.
+- "Confidence score" = classification confidence (already in every record). "Summary of email"
+  starts as the subject plus the first lines of the body, since the pipeline produces no summary.
+  "Groups" is read as the documents present (SI, BL), with the category as a separate chip.
+- New backend items: a `confirm` review action (agree with the system's verdict), a report CSV
+  export, and one `__version__` (0.0.1) surfaced in `/api/status` and `report.json`.
+- Hash routes (`#/parsing/{id}`) so it works read-only and cases are linkable.
+
+**Conflicts with earlier scope, flagged and NOT decided:**
+- The earlier scope said no persistent DB and no analytics dashboard, but the draft has
+  **Database** and **Report** tabs. Proposed: Database = read-only explorer over the existing
+  files (no database); Report = the brief's discrepancy report with export, no charts.
+- "ML" is listed as a feature, but nothing in the system is a trained model (LLM, OCR + vision
+  LLM, fixed rules). Rename or keep is the owner's call.
+
+**Open questions / next steps:**
+- The 11 numbered decisions at the end of `web/DESIGN.md` (items 1 to 4 from the first version,
+  5 to 11 new). The plan's Review, Report and Database sections are labelled "proposed" and
+  should be replaced when the owner drafts those tabs.
+- Phase 0 (backend: keep `extracted`, reviews, API, serve UI, version) is still the first job.
+
+**Synced through:** `1493339` (plan left uncommitted for review)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (new UI: backend, Home, Parsing and Database tabs built)
+
+**What changed:**
+- **Backend:**
+  - `classify_email` now also returns a one-line `summary` (same model call, no extra request);
+    `classify_email` returns a 3-tuple and its callers were updated.
+  - `ComparisonResult` gains `summary` and `extracted` (every value read from the SI and BL, with
+    its source), both written to the record and never to `output.json`.
+  - New `app/store.py`: the JSONL checkpoint is **always** written; when `MONGODB_URI` is set
+    every record is also copied into MongoDB (`results` and `runs` collections). New
+    `app/api.py` (read-only `/api`, plus retrying one email), `app/run_state.py`, and
+    `app/__init__.py` holds `__version__ = "0.0.1"`. `main.py` serves `index.html`, `css/` and
+    `js/` only, with `Cache-Control: no-cache`.
+  - `run.py` takes a `checkpoint` object instead of a path (`checkpoint_path` is gone).
+- **UI** (`web/`): replaced the old single-file dashboard with plain JS ES modules and CSS, no
+  build step. Icon rail, Home, Parsing, Database, "design in progress" pages for Review and
+  Report, a compact run control, light and dark, keyboard (`j` `k` `/` `g h p d`), a narrow-screen
+  layout, and the same page running read-only from `report.json`.
+- **Tests:** 97 Python (`test_store`, `test_api`, and the extended ladder tests) and 37 JavaScript
+  (`tests/js/*.test.js`, Node's built-in runner). `requirements-dev.txt` adds `mongomock` and
+  `httpx`; `requirements.txt` adds `pymongo`.
+- `web/build_report.py` rewritten: it calls the API's own functions and emits the new format
+  (`{version, summary, emails, cases}`). `web/report.json` was **converted** from the old
+  520-email snapshot (no summaries; only differing fields), so the Vercel demo keeps working.
+- Docs: `web/DESIGN.md` (decisions recorded, storage and phases updated), `README.md`,
+  `web/README.md`, `results/README.md`, `.env.example` (MongoDB settings), `AGENT.md` (tests).
+
+**Decisions made (owner's answers):**
+- Database is **MongoDB** (reverses the earlier "no DB" scope). "ML" is removed from Home.
+  "Summary of email" = a label plus a very short summary. "Groups" = the email labels, used to
+  filter the list. Keep the "N emails need attention" line. Keep the run/retry control but make
+  it small (owner will check with a friend what it should do). Earlier open questions accepted as
+  recommended. Review and Report tabs on hold until the owner drafts them.
+
+**Decisions made (mine, not asked):**
+- **The JSONL file stays the source resume reads, and MongoDB is a copy**, not the reverse. A
+  database outage then cannot lose a run; a failed copy is recorded in `store.error` and the run
+  carries on. The API reads MongoDB when it is configured and non-empty, else the file.
+- The Database tab is read-only and never shows credentials (only scheme, host and port).
+- Old-run records (no `extracted`) render as "only the differing fields were kept", not as an
+  error, so `report.json` from before this change still works.
+- A "read by ..." note is shown once per document, and only fields read differently are tagged.
+
+**Verification:**
+- Real 12-email run through the new pipeline (`gemini-3.1-flash-lite`): 12/12 have a summary, 4
+  kept `extracted`, 0 API failures.
+- **Prompt change check:** classify prompt with vs without the summary, 30 emails: 19 comparable
+  (11 hit the model rate limit), **all 19 kept the same category**; summaries 12 to 18 words.
+  Small sample; re-check when quota allows.
+- Browser (built-in pane): Home, Parsing (mismatch, review with evidence, unreadable, failed,
+  non-comparison), tab and label filtering, search, `j`/`k`, Database, both placeholder tabs,
+  the 375 px layout (fixed an overflow and stacked the field table), and static mode served by
+  `python -m http.server` with no API. To see review and failed cases I temporarily appended four
+  hand-made records to `results/results.sample.jsonl`, then **restored the original** 12 records.
+- Mutation-checked the store (a real verdict overwritten, credentials leaking, a failing mirror
+  not contained): each is caught by a specific test.
+- **Bugs found by testing in the browser:** native `append(null)` wrote the word "null" into the
+  header (added a null-safe `add()`); the mobile list stretched to 681 px; a stale browser cache
+  served old JS (added `no-cache` revalidation).
+
+**NOT verified:**
+- **MongoDB against a real server.** None is installed (no Docker, no `mongod`); everything ran
+  against `mongomock`. **One real check is still needed** with an Atlas URI or a local install.
+- **The header's Run and Retry buttons were rendered but never clicked**: they spend model quota,
+  and Run asks for confirmation. `POST /api/emails/{id}/retry` and the run state are tested with
+  mocks only. `run()` blocks until the run finishes, so the UI polls `/api/status` meanwhile.
+- Dark mode was seen on Home only (system theme); the toggle and dark Parsing were not screenshot.
+- 800 px (the breakpoint) was not checked, and no full 520-email run has used the new format.
+
+**Open questions / next steps:**
+- **MongoDB:** where does it run (Atlas free tier or a local install)? Needed for the one real
+  check. Should it stay optional? Recommended: yes.
+- **Run and retry:** the owner will confirm with a friend what the control should do.
+- **Review and Report drafts** are still to come; `web/DESIGN.md` sections 5.6 and 6.5 are
+  placeholders until then. Reviews (write-back, recompute, undo) are not built.
+- `ML`: not implemented; reconsider later.
+- Rebuild `web/report.json` from a real full run when quota allows, so the demo has summaries and
+  all 7 fields.
+- `.claude/launch.json` (local preview config) is gitignored, not committed.
+- Working notes for the next session: the shell heredoc collapses backslashes (`\b`, `\n`,
+  `\x`), so files with regexes or escapes should be written with the Write/Edit tools; and the
+  browser pane's screenshots only work after `tabs_select` fronts the tab.
+
+**Synced through:** `334053b` (committed by task: `8c059b5`, `66b54fc`, `4fb134e`, `34176bb`, `334053b`, then docs)
+
+---
+
+## 2026-09-21 — Codex — Brendan (Task 4 reliability)
+
+**What changed:**
+- Ported bounded OpenAI-compatible provider retries onto the current multimodal client:
+  exactly three application attempts with 0.5s and 1.0s delays for timeouts, connection
+  errors, HTTP 408/429, and every 5xx response. SDK retries remain disabled.
+- Added metadata-only request/stage logging and failure-stage correlation without logging
+  prompts, document contents, provider response bodies, credentials, or exception messages.
+- Hardened classification, SI extraction, BL extraction, comparison, worker, and batch
+  boundaries so one malformed or failed email produces `NEEDS_REVIEW` without ending the run.
+- Added 31 `unittest` cases using the installed OpenAI SDK's real exception classes, including
+  vision-mode preservation, concurrent email isolation, checkpoint resume, and exact evaluator
+  output keys.
+
+**Why:**
+- Task 4 requires transient provider failures to retry predictably while permanent failures
+  fail fast, and no individual email failure may terminate or corrupt the batch.
+
+**Decisions made:**
+- Did not apply the older `e822ada` patch because `git apply --check` failed against `9986162`.
+  The old patch targeted the pre-OCR `_generate` signature and text-only attachment path, so
+  forcing it would have replaced newer PDF/DOCX/XLSX/vision work.
+- Kept `failure_stage` internal to checkpoint/review records. Evaluator output and the official
+  seven comparison fields remain unchanged.
+- Kept malformed model JSON and document validation failures non-retryable. Provider failures
+  are `processing_error`; unreadable/unsupported documents remain `unreadable`.
+
+**Verification:**
+- Installed `requirements.txt` into the existing ignored Python 3.14 virtual environment.
+  OpenAI SDK 3.16.2 imports successfully and `pip check` reports no broken requirements.
+- `python -m unittest -v`: 31/31 passed with the real SDK; syntax compilation passed.
+- Uvicorn started cleanly; `GET /docs` and `GET /openapi.json` returned HTTP 200 and `/run`
+  remains present.
+
+**Open questions / next steps:**
+- No official dataset is present and `.env` has no `LLM_API_KEY`, so the requested one-email
+  real-provider check remains blocked. Do not fabricate either prerequisite.
+- Review the uncommitted Task 4 diff before committing. No push, merge, or PR was made.
+
+**Synced through:** `99861622c301b83bf5e5dd687d662a91ff32dda8` (Task 4 changes uncommitted)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (fix after merging brendan-task4)
+
+**What changed:**
+- `app/pipeline/run.py` rewritten by hand to combine both branches. The merge commit `62f827b`
+  had **left it unable to compile** (a missing comma, stale variable names, and the batch runner
+  still using `_load_checkpoint`, `_failed`, `_better_failure` and `checkpoint_path`, which no
+  longer exist). Even the parts that parsed were wrong: `_extract_document` still called the
+  old `extract_fields(read_document(...))`, which `run.py` no longer imports, so every document
+  check would have failed with a `NameError` that Brendan's broad `except Exception` turns into a
+  quiet `processing_error`.
+- `app/llm_client.py`: `call_vision_json` now follows Brendan's convention for a non-JSON reply
+  (log the error type, raise `ValueError("model did not return valid JSON")`) instead of putting
+  the raw reply, which can hold document text, in the message.
+- `tests/test_pipeline_reliability.py` (Brendan's) adapted to the merged interfaces. Only the
+  plumbing changed; every test's intent and assertions are as he wrote them: `classify_email`
+  returns `(category, confidence, summary)`, extraction is patched at `run.extract_document`,
+  and the checkpoint is a `store.Checkpoint`-shaped object instead of a path.
+- New `RealLadderThroughRunTests` in `tests/test_extract_ladder.py`: `process_email` with the
+  real extraction ladder and only the model mocked. The other run tests patch
+  `run.extract_document`, and Brendan's patched `extract_fields`, so nothing exercised the seam
+  that had broken. Simulating the merge bug makes 3 of these 4 tests fail.
+- `HANDOFF.md`, `schema.py` and the rest of `llm_client.py` were merged correctly and needed no
+  change: no line from either parent is missing from `HANDOFF.md`, and there are no duplicate
+  entries.
+
+**What the merged `run.py` now does (both sides kept):**
+- From Brendan: per-stage failure isolation with `failure_stage`, metadata-only logging (email
+  ID, stage, error type; never document text), invalid or duplicate email IDs contained,
+  worker and batch boundaries, and the scheduled ID being authoritative.
+- From this branch: the email `summary`, every value read (`extracted`), `field_issues`, the
+  extraction ladder via `extract_document`, and the `checkpoint` object (file, plus MongoDB).
+- Failures keep what was already known: category, confidence and summary survive a later-stage
+  failure. `failure_stage` and `summary` are in the stored record, never in `output.json`.
+
+**Verification:**
+- 132 Python tests and 37 JavaScript tests pass (31 of the Python ones are Brendan's).
+- A real run of the merged pipeline on 6 emails (`gemini-3.1-flash-lite`, temp results folder):
+  5 `OK`, 1 `MISMATCH`, no failures, 6 of 6 with a summary, 3 with extracted values, and the
+  submission keys unchanged.
+- **Not verified:** Brendan's own open item (a one-email real-provider check with his retry
+  settings) is covered only by that 6-email run, and I did not exercise a real 429 to see the
+  new 3-attempt backoff.
+
+**Open questions / next steps:**
+- **The pushed merge commit `62f827b` is broken.** Commit this fix before pushing, or before the
+  PR is merged, so `main` never holds a `run.py` that does not compile.
+- Brendan reduced retries from 5 to 3 attempts (0.5 s and 1.0 s) and stopped retrying HTTP 409.
+  With the free tier's per-minute limits that is a much shorter wait than before; if 429s become
+  common in a full run, revisit the delay.
+
+**Synced through:** `a6f0a5d` (the merge `62f827b`, then the fixes `be619b2` and `a6f0a5d`)

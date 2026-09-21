@@ -48,7 +48,10 @@ as a small, separate step — don't fold it into an unrelated feature commit.
 ## General conventions
 
 - (Add language/framework/style conventions here as they're decided.)
-- (Add test commands here once a test setup exists.)
+- Tests, from the repo root: `pip install -r requirements-dev.txt` once, then
+  `python -m unittest discover -s tests` (Python) and `node --test "tests/js/*.test.js"`
+  (JavaScript, Node 22+). They mock OCR, the LLM calls and MongoDB, so they need no API key,
+  no Tesseract and no database.
 
 ## Commit message convention
 

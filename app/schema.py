@@ -32,6 +32,47 @@ class ShipmentFields(BaseModel):
     gross_weight_kg: Optional[str] = None
 
 
+class FieldIssueReason(str, Enum):
+    NOT_FOUND = "not_found"
+    INVALID_VALUE = "invalid_value"
+    UNREADABLE = "unreadable"
+
+
+class FieldIssue(BaseModel):
+    """A field that could not be resolved, with what a reviewer needs to settle it.
+
+    Internal only: it rides along in results.jsonl and report.json, never in the
+    submission, which must keep the hackathon's shape.
+    """
+
+    document: str  # "SI" or "BL"
+    file: str
+    field: str
+    reason: FieldIssueReason
+    detail: str  # why, including the route tried (e.g. "OCR confidence 42 < 80")
+    source: str  # last step tried: "text", "ocr" or "vision"
+    # The best candidate found. Kept for the reviewer, never used as the answer.
+    value: Optional[str] = None
+    evidence: Optional[str] = None  # the OCR line / text snippet it came from
+
+
+class ExtractionResult(BaseModel):
+    """What extracting one document produced: accepted fields, and unresolved ones."""
+
+    file: str
+    fields: ShipmentFields
+    sources: dict[str, str] = {}  # accepted field -> "text", "ocr", "ocr_llm" or "vision"
+    issues: list[FieldIssue] = []
+
+
+class ExtractedDocument(BaseModel):
+    """The 7 values read from one document, kept so a reviewer can see all of them."""
+
+    file: str
+    fields: dict[str, Optional[str]]  # None where the field could not be settled
+    sources: dict[str, str] = {}  # accepted field -> "text", "ocr", "ocr_llm" or "vision"
+
+
 class ComparisonResult(BaseModel):
     email_id: str
     category: EmailCategory
@@ -42,6 +83,13 @@ class ComparisonResult(BaseModel):
     mismatches: dict[str, dict[str, Optional[str]]] = {}
     needs_review: bool = False
     review_reason: Optional[ReviewReason] = None
+    field_issues: list[FieldIssue] = []
+    # Internal, like confidence: one sentence on what the email is about, and the
+    # values read from each document ("SI" / "BL"). Never part of the submission.
+    summary: Optional[str] = None
+    extracted: dict[str, ExtractedDocument] = {}
+    # Internal operational detail; deliberately absent from evaluator output.
+    failure_stage: Optional[str] = None
 
     def to_submission(self) -> dict:
         """Map to the hackathon's sample_submission.json shape."""

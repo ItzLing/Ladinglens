@@ -67,9 +67,11 @@ curl -X POST http://localhost:8000/run
 Invoke-RestMethod -Method Post -Uri "http://localhost:8000/run"
 ```
 
-This writes `output.json` (the submission, keyed by `email_id`), `classify_cache.json`
-(adds each email's confidence, for sweeping the threshold offline) and `results.jsonl`
-(one line per email, written as it completes).
+Everything a run writes goes into [`results/`](results/README.md):
+`output.json` (the submission, keyed by `email_id`), `classify_cache.json` (adds each
+email's confidence, for sweeping the threshold offline) and `results.jsonl` (one line
+per email, written as it completes). **If every record says `processing_error`, nothing was
+checked** -- the model API failed, usually on quota. See `results/README.md`.
 
 ### Iterating without spending a full run
 
@@ -81,12 +83,12 @@ curl -X POST "http://localhost:8000/run?limit=20"
 Invoke-RestMethod -Method Post -Uri "http://localhost:8000/run?limit=20"
 ```
 
-Limited runs write to `output.sample.json` / `classify_cache.sample.json`, so they can't
-overwrite a full baseline -- and so the scorer is never pointed at a partial submission.
+Limited runs write `output.sample.json` / `classify_cache.sample.json` / `results.sample.jsonl`
+into `results/`, so they can't overwrite a full baseline -- and so the scorer is never pointed at a partial submission.
 
 ### Resuming an interrupted run
 
-`results.jsonl` is written per email, so a run that dies partway can be continued
+`results/results.jsonl` is written per email, so a run that dies partway can be continued
 instead of restarted. Resuming also **retries `processing_error` emails**, since those
 are API failures rather than real verdicts:
 
@@ -141,34 +143,69 @@ exposing `emails()` and `read_text()` drops in without pipeline changes.
 ## Scoring a run
 
 ```bash
-cd data/server && PYTHONIOENCODING=utf-8 python score_cli.py ../../output.json
+cd data/server && PYTHONIOENCODING=utf-8 python score_cli.py ../../results/output.json
 ```
 
 ```powershell
-$env:PYTHONIOENCODING='utf-8'; python data\server\score_cli.py output.json
+$env:PYTHONIOENCODING='utf-8'; python data\server\score_cli.py results\output.json
 ```
 
 `PYTHONIOENCODING` is needed because the scoreboard draws bar characters the Windows
 console can't encode by default. `score_cli.py` locates `ground_truth.json` relative to
 its own path, so it works from any directory.
 
-## Review dashboard
+## The web app
 
-A static page over the latest run -- filterable inbox, and a side-by-side SI vs BL diff
-for each flagged field. See [`web/README.md`](web/README.md) for deployment.
+Start the server and open <http://localhost:8000>:
 
 ```bash
-python web/build_report.py          # regenerate web/report.json after every run
-cd web && python -m http.server 8777
+uvicorn app.main:app
+```
+
+It is plain JavaScript and CSS with no build step, served by the same FastAPI app. The icon
+rail on the left has five tabs:
+
+- **Home**: what the system does, and how many emails need attention.
+- **Parsing**: the email list (**Need attention** or **All emails**) with label chips to
+  filter by (SI request, BL comparison, invoice query, general, spam). Pick an email to see its
+  label, confidence score, a one-line summary, and for a document check all seven fields with
+  the SI beside the BL and what differs highlighted. It only reads; nothing here changes a
+  verdict.
+- **Review** and **Report**: still being designed.
+- **Database**: a read-only view of what is stored (MongoDB collections, or the files).
+
+The small control at the top right shows whether a run is in progress, and can retry the
+emails that failed on the model API, or run the pipeline. Keys: `j` and `k` move through the
+list, `/` searches, `g` then `h`, `p` or `d` jumps to Home, Parsing or Database.
+
+The same page also works **read-only with no server**, from `web/report.json`; that is what
+the Vercel demo is. See [`web/README.md`](web/README.md), and [`web/DESIGN.md`](web/DESIGN.md)
+for the design.
+
+```bash
+python web/build_report.py          # rebuild the demo data from the latest run
+python web/build_report.py --sample # ...or from a limited run (?limit=N)
 ```
 
 ```powershell
 python web\build_report.py
-Set-Location web; python -m http.server 8777
 ```
 
-Then open <http://localhost:8777>. Opening `index.html` off the filesystem will not
-work -- the `fetch` of `report.json` has to be served over http.
+### MongoDB (optional)
+
+Results always go to `results/results.jsonl`, which is what resume reads, so a database
+being down never loses a run. Set these in `.env` and every record is also copied into
+MongoDB, and the web app reads from there:
+
+```
+MONGODB_URI=mongodb+srv://user:password@cluster.example.mongodb.net
+MONGODB_DB=ladinglens
+```
+
+Collections: `results` (one document per email and scope, `full` or `sample`) and `runs` (one
+per run). The Database tab shows both, read-only, and never shows the credentials. Without
+`MONGODB_URI` the app simply uses the files. Note: the MongoDB support is tested against an
+in-memory fake, and has not yet been run against a real server.
 
 ## Plugging in the hackathon dataset
 
@@ -176,7 +213,8 @@ The bundle lives in [`data/`](data) and is gitignored -- it carries `ground_trut
 and the scorer, which are organizer-only material. Point the pipeline at it with
 `INBOX_SOURCE` in `.env`:
 
-- **Local files** (default): `INBOX_SOURCE=data/data_v2`
+- **Local files** (default): `INBOX_SOURCE=data`. The folder must hold `inbox/` (one
+  JSON per email) and `attachments/` -- those two names are fixed by `data/loader.py`.
 - **Docker dataset server**: `INBOX_SOURCE=http://localhost:8080`, started with
   `docker compose up --build` from `data/`. Only needed for the `POST /submit`
   endpoint; local scoring via `score_cli.py` needs no server.
@@ -187,26 +225,104 @@ and the scorer, which are organizer-only material. Point the pipeline at it with
 app/
   schema.py            # EmailCategory, ShipmentFields, ComparisonResult
   llm_client.py         # OpenAI-compatible client for JSON-only structured calls
-  main.py                # FastAPI app, POST /run
+  main.py                # FastAPI app: POST /run, /api, and the web UI
+  api.py                 # the read-only /api routes, and retrying one email
+  store.py               # result store: JSONL file always, MongoDB copy when configured
+  paths.py               # where inputs and results live
+  run_state.py           # is a run in progress
   pipeline/
-    classify.py          # stage 1: email -> category (+ confidence)
-    extract.py            # stage 2: SI/BL text -> ShipmentFields
+    classify.py          # stage 1: email -> category, confidence, one-line summary
+    read_document.py      # attachment (txt/pdf/docx/xlsx/image) -> text, or page images
+    ocr.py                 # Tesseract OCR, per-word confidence, keyword label lookup
+    validate.py            # format / range / placeholder checks on extracted values
+    extract.py            # stage 2: the fallback ladder -> ShipmentFields + field issues
     compare.py             # stage 3: SI vs BL -> mismatches (deterministic, no LLM)
     run.py                  # orchestrator, checkpointing, decides needs_review
+results/                 # everything a run writes (only its README is tracked)
+tests/
+  test_*.py               # Python tests, offline (OCR, LLM and MongoDB mocked)
+  js/*.test.js            # JavaScript tests for the pure UI modules (node:test)
 web/
-  build_report.py       # joins results.jsonl + inbox -> report.json
-  index.html             # static review dashboard (no build step)
+  index.html             # the app shell
+  css/, js/              # plain CSS and ES modules, no build step
+  build_report.py       # builds report.json, the data behind the read-only demo
+  DESIGN.md              # the UI plan and design
 data/
   loader.py             # hackathon dataset loader (Inbox class)
-  data_v2/               # inbox/, attachments/, sample_submission.json
+  inbox/                 # one JSON per email
+  attachments/           # the SI / BL documents
+  sample_submission.json
   server/                 # dataset server + score_cli.py
+```
+
+## Reading attachments
+
+Each SI/BL attachment goes through a fallback ladder in
+[`app/pipeline/extract.py`](app/pipeline/extract.py). The cheapest, most trustworthy step
+runs first, and the API is only used where it has to be:
+
+1. **Read the text** ([`read_document.py`](app/pipeline/read_document.py)): `.txt`, `.docx`
+   and `.xlsx` are parsed locally, and a `.pdf` uses its text layer. That text goes to the
+   LLM, which maps it onto the 7 fields.
+2. **No usable text** (a scanned PDF, or a `.jpg`/`.png`/`.tif` file): OCR with
+   [Tesseract](https://github.com/tesseract-ocr/tesseract), which gives a confidence for every
+   word. A field's confidence is the **minimum** over its words, so one misread character
+   drags the whole field down.
+3. **Found by keyword and confident:** accepted, with no LLM call.
+4. **Low OCR confidence:** the characters were misread, so re-parsing that text cannot fix
+   it. The field goes straight to a **vision LLM** looking at the page image. Only the fields
+   that need it are sent, in one call per document.
+5. **Confident, but the label is not one we know:** the text is fine and only the wording is
+   new, so an LLM parses the clean OCR text.
+6. **Validation** on every value from OCR or an LLM (`validate.py`): weight must be a number
+   in kilograms within range, container count a whole number in range, names and ports
+   real text without stray symbols or placeholders such as `TBA` and `N/A`. For a text
+   document the raw line is checked too, so an LLM that tidies `____MT` into `MT` is still
+   caught. A value that fails is treated like low confidence.
+7. **Still unresolved:** the email is `needs_review` (`missing_value`) and each field is
+   recorded as a `field_issues` entry with its reason and evidence, in `results.jsonl` and
+   `web/report.json`. Nothing is guessed or dropped. `output.json` keeps the hackathon shape.
+
+A file that cannot be read at all -- corrupt, empty, or an unsupported type -- is
+`needs_review` (`unreadable`). If an API call fails, the email is `processing_error`
+instead, since that says nothing about the document.
+
+### Installing Tesseract
+
+`pytesseract` is only the Python wrapper. It needs the Tesseract program itself:
+
+```powershell
+winget install --id UB-Mannheim.TesseractOCR
+```
+
+The default Windows install folder is found automatically; otherwise set `TESSERACT_CMD`
+in `.env`. **Without Tesseract nothing breaks:** scans skip steps 2-3 and 5, and every
+field goes to the vision LLM. It works, but costs one vision call per scanned document
+where Tesseract would usually cost none.
+
+Scans and vision need a **vision-capable model**. Gemini is; a local `llama3.1` is not. Set
+`LLM_VISION_MODEL` in `.env` to use a different model for the vision step than for text.
+`OCR_MIN_CONFIDENCE` (default 80) is the confidence below which a field goes to vision.
+
+### Tests
+
+Everything is tested offline: OCR, the model calls and MongoDB are all mocked, so no API
+quota, Tesseract or database is needed.
+
+```bash
+pip install -r requirements-dev.txt     # once: adds mongomock and httpx
+python -m unittest discover -s tests    # Python
+node --test "tests/js/*.test.js"        # JavaScript (Node 22 or newer, no packages)
 ```
 
 ## Current scope
 
-- Attachment extraction handles `.txt` SI/BL documents only. `.pdf`, `.docx` and
-  `.xlsx` are routed to `needs_review` (`unreadable`) rather than guessed at -- see
-  `app/pipeline/run.py`. That covers 58 of 250 attachments, and is the largest single
-  block of unclaimed score.
 - `Dockerfile` is not built yet.
+- The **Review** and **Report** tabs are waiting on their designs. Until Review exists there
+  is no way to confirm or correct a case in the UI.
+- MongoDB support has only run against an in-memory fake, not a real server.
+- The OCR confidence threshold (`OCR_MIN_CONFIDENCE`) has not been calibrated against degraded
+  scans; the dataset's own scans are clean.
+- The one-line email summary comes from the same model call as the label. Adding it left the
+  category unchanged on all 19 emails compared, but that sample is small.
 - See [`HANDOFF.md`](HANDOFF.md) for the running log of decisions and open questions.
