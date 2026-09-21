@@ -239,6 +239,3 @@ data/docker-compose.yml
 output*.json
 classify_cache*.json
 results*.jsonl
-
-# OCR transcriptions of scanned PDFs (regenerated on demand)
-ocr_cache/
