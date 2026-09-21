@@ -234,11 +234,17 @@ function renderTiles() {
   $("tiles").innerHTML = tiles.map(t =>
     `<div class="tile"><div class="label">${esc(t.label)}</div><div class="value">${t.value}</div><div class="note">${esc(t.note)}</div></div>`).join("");
 
-  const failed = DATA.summary.review_reasons?.processing_error || 0;
-  if (failed) {
-    $("banner").hidden = false;
-    $("banner").textContent = `${failed} emails could not be processed because the model API failed (rate limits), not because of anything in the documents. They are escalated rather than guessed at, and can be retried without re-running the rest.`;
+  // Explain whichever escalation reason dominates, so a reader never sees a
+  // large "needs review" count with no account of what it means.
+  const r = DATA.summary.review_reasons || {};
+  const plural = n => n === 1 ? "email" : "emails";
+  let note = "";
+  if (r.processing_error) {
+    note = `${r.processing_error} ${plural(r.processing_error)} could not be processed because the model API failed (rate limits), not because of anything in the documents. They are escalated rather than guessed at, and can be retried without re-running the rest.`;
+  } else if (r.unreadable) {
+    note = `${r.unreadable} ${plural(r.unreadable)} carry PDF, Word or Excel attachments, which this version does not parse yet — it reads plain-text documents only. Rather than guess at their contents, it escalates them for a human, as it does whenever it cannot complete a step confidently.`;
   }
+  if (note) { $("banner").hidden = false; $("banner").textContent = note; }
 }
 
 function renderBars() {
