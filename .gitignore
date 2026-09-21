@@ -240,5 +240,8 @@ data/docker-compose.yml
 results/*
 !results/README.md
 
+# OCR transcriptions cached per document hash -- regenerated on demand.
+ocr_cache/
+
 # local Claude Code tooling
 .claude/

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from app import __version__, run_state
 from app.paths import DATA_DIR, ROOT_DIR, inbox_source, results_file
@@ -18,6 +19,10 @@ load_dotenv(ROOT_DIR / ".env")
 from loader import Inbox  # noqa: E402
 
 from app.api import router as api_router  # noqa: E402
+from app.llm_client import LLMUnavailableError  # noqa: E402
+from app.pipeline.classify import classify_email  # noqa: E402
+from app.pipeline.compare import compare_fields  # noqa: E402
+from app.pipeline.extract import extract_fields  # noqa: E402
 from app.pipeline.run import run_pipeline  # noqa: E402
 from app.store import FileCheckpoint, checkpoint_file, get_store  # noqa: E402
 
@@ -113,6 +118,78 @@ def _do_run(limit: Optional[int], resume: bool) -> dict:
         "storage": store.backend,
         "storage_error": store.error,
     }
+
+
+class ProcessRequest(BaseModel):
+    """One email and its two documents, supplied inline rather than read from disk."""
+
+    subject: str = ""
+    sender: str = ""
+    body: str = ""
+    si_text: Optional[str] = None
+    bl_text: Optional[str] = None
+
+
+@app.post("/process")
+def process(payload: ProcessRequest):
+    """Classify one email and compare its documents, with nothing read from disk.
+
+    /run needs the dataset on the filesystem; this takes everything in the
+    request instead, so a deployed instance needs no inbox mounted and no
+    organizer material baked into its image.
+
+    Comparison runs whenever both documents are supplied, regardless of the
+    predicted category -- a caller who pasted an SI and a BL wants the diff,
+    not a refusal because classification read the covering note differently.
+    """
+    result: dict = {"category": None, "confidence": None}
+
+    if payload.subject or payload.body:
+        try:
+            category, confidence = classify_email(
+                {
+                    "subject": payload.subject,
+                    "from": payload.sender,
+                    "body": payload.body,
+                    # Documents were supplied inline, so name them the way the
+                    # dataset does -- attachments are the strongest signal the
+                    # classifier has for a comparison request.
+                    "attachments": (
+                        ["inline_SI.txt", "inline_BL.txt"]
+                        if payload.si_text and payload.bl_text
+                        else []
+                    ),
+                }
+            )
+            result["category"] = category.value
+            result["confidence"] = confidence
+        except (LLMUnavailableError, ValueError, KeyError) as exc:
+            raise HTTPException(status_code=502, detail=f"classification failed: {exc}")
+
+    if not (payload.si_text and payload.bl_text):
+        result["status"] = "NEEDS_REVIEW" if result["category"] else "OK"
+        result["review_reason"] = "missing_attachment"
+        return result
+
+    try:
+        si = extract_fields(payload.si_text)
+        bl = extract_fields(payload.bl_text)
+    except LLMUnavailableError as exc:
+        raise HTTPException(status_code=502, detail=f"extraction unavailable: {exc}")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"could not read a document: {exc}")
+
+    mismatches = compare_fields(si, bl)
+    result.update(
+        si_fields=si.model_dump(),
+        bl_fields=bl.model_dump(),
+        mismatches=mismatches,
+        defect_fields=list(mismatches),
+        has_defect=bool(mismatches),
+        status="MISMATCH" if mismatches else "OK",
+        review_reason=None,
+    )
+    return result
 
 
 # The UI. Only index.html, css/ and js/ are served, not the rest of web/.
