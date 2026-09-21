@@ -48,13 +48,14 @@ What the brief asks the report to do, and where this design meets it:
 | "N emails need attention" line on Home | **Keep** |
 | Run and retry in the header | **Keep, but smaller.** The owner will check with a friend what the function should do |
 | Earlier open questions | **Accepted as recommended:** review write-back is in scope, reviewer name is optional, reviewers edit only flagged fields, the read-only Vercel demo stays |
-| Review and Report tabs | **On hold.** The owner will design them and come back |
+| Review tab | **On hold.** The owner will design it and come back |
+| Report tab | Built from the owner's old dashboard: four numbers, a category chart, and the emails folded by label |
 
 ### 2.3 How the draft maps onto the plan
 
 | Draft | In this plan |
 |---|---|
-| Icon rail with 5 destinations | The app shell (6.1). Review and Report show a "design in progress" page for now |
+| Icon rail with 5 destinations | The app shell (6.1). Review shows a "design in progress" page for now |
 | Home | Tab 1 (6.2) |
 | Parsing: list left, detail right | Tab 2 (6.3) |
 | Tabs "Need attention / All emails" | The list tabs; group chips filter within them |
@@ -185,7 +186,7 @@ append-only, overlaid on the model output.
 
 - **Icon rail** on the left, as drawn: Logo (goes Home), Parsing, Review, Report, Database.
   Icons only, so each has an accessible name and a tooltip. The current tab is highlighted.
-  Review and Report open a short "Design in progress" page for now.
+  Review opens a short "Design in progress" page for now.
 - **Header:** "Ladinglens" as the title. On the right, a **small** run control: a status dot
   with "Idle" or "212 of 520", an icon button for **Retry failed (n)**, and a menu for **Run**
   (which asks for confirmation because it spends model quota). It is deliberately compact: the
@@ -253,11 +254,28 @@ A read-only explorer of what the system has stored. Never edits.
 - **Documents:** a paged table for the chosen collection, filterable by email ID, with a
   document opening as formatted JSON.
 
-### 6.5 Tabs 3 and 4: Review and Report (on hold)
+### 6.5 Tab 3: Review (on hold)
 
-The rail shows both, and each opens a "Design in progress" page. Nothing further is built until
-the owner's drafts arrive. Earlier ideas for them (a Review workspace with an evidence panel
-and form, and a discrepancy report with export) are kept only as suggestions for those drafts.
+The rail shows it and it opens a "Design in progress" page. Nothing further is built until the
+owner's draft arrives. The earlier idea (a Review workspace with an evidence panel and form) is
+kept only as a suggestion for that draft.
+
+### 6.6 Tab 4: Report
+
+The old single-page dashboard, moved into the app. From the top:
+
+- **Four numbers:** emails processed, comparison requests, mismatches found, escalated to a
+  human.
+- **A note** when many emails were escalated for one reason (a failed model API, or attachments
+  that could not be read), so a big number is never unexplained.
+- **Emails by category:** one bar per label.
+- **Emails, folded by label.** Every label is a closed fold showing its count and how many
+  mismatches and reviews are inside, so the page stays short. A fold shows 25 rows at a time
+  with "Show more". A row opens the email in Parsing. A status filter and a search sit above
+  the folds; while either is set the matching folds open by themselves, and they fold again
+  when it is cleared.
+
+It reads the same report as Home and Parsing, so it works in the live app and in the demo.
 
 ## 7. Shared design
 
@@ -324,7 +342,8 @@ web/
   js/views/home.js      tab 1
   js/views/parsing.js   tab 2
   js/views/data.js      tab 5
-  js/views/soon.js      "Design in progress" for Review and Report
+  js/views/report.js    the Report tab: numbers, chart, emails folded by label
+  js/views/soon.js      "Design in progress" for Review
   js/components/        rail.js, runbar.js, fields.js, chips.js
   js/util/              diff.js (word diff), format.js, dom.js
   report.json           static demo data (kept, tracked)
@@ -342,7 +361,7 @@ tests/js/               node:test for the pure modules
 | 3 Database | **Tab 5**: connection card, collections, documents | **Built** and checked on the file backend; the Mongo path is tested only against the in-memory fake |
 | 4 Run and retry | Compact header control, status polling, retry one and all | **Built** (compact), waiting for the owner to confirm what it should do. Not yet exercised with a live full run |
 | 5 Polish | Keyboard, dark, responsive, states in 7.5 | Mostly built: keyboard, light and dark, 375 px stacking, the read-only demo. Not yet done: a check at 800 px, and the loading skeleton on slow connections |
-| Later | Review and Report tabs, and their backend (5.6) | After the owner's drafts |
+| Later | Review tab, and its backend (5.6) | After the owner's draft |
 
 ## 10. Testing
 
@@ -374,4 +393,4 @@ tests/js/               node:test for the pure modules
 2. **Should MongoDB be required or optional?** Recommended: optional, falling back to files.
 3. **What should the run and retry control do?** Kept small until the owner has checked with a
    friend.
-4. **Review and Report drafts.** Send them when ready; sections 5.6 and 6.5 then become real.
+4. **Review draft.** Send it when ready; sections 5.6 and 6.5 then become real.

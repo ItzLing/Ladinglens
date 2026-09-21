@@ -46,6 +46,7 @@
 .top .grow { flex: 1; }
 .content { flex: 1; min-height: 0; overflow: auto; }
 .page { max-width: 880px; padding: var(--space-6) var(--space-5); }
+.page.wide { max-width: none; }
 
 /* ---- two-pane screens (Parsing) ---- */
 .panes {

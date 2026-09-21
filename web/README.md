@@ -16,7 +16,7 @@ css/                tokens (light and dark), base, layout, components
 js/main.js          start-up, hash router, keyboard
 js/api.js           the live adapter and the static adapter, one interface
 js/store.js         list filtering, sorting, counts, banners (pure, unit-tested)
-js/views/           home, parsing, data (the Database tab), soon (Review and Report)
+js/views/           home, parsing, report, data (the Database tab), soon (Review)
 js/components/      rail, run control, chips, the field table and documents
 js/util/            dom helpers, icons, the word diff, formatting
 report.json         the demo data

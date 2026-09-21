@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   caseBanner, createStore, fieldRows, filterRows, groupCounts, isFailed, needsAttention, sortRows, statusChip, tabCounts,
+  escalationNote, reportGroups, reportTiles,
 } from "../../web/js/store.js";
 import { FIELDS } from "../../web/js/util/format.js";
 
@@ -146,4 +147,31 @@ test("a failure is never described as a verdict on the documents", () => {
   const b = caseBanner({ status: "NEEDS_REVIEW", review_reason: "processing_error" }, "BL_COMPARISON");
   assert.match(b.text, /not a verdict on the documents/);
   assert.equal(b.kind, "review");
+});
+
+test("report tiles read the summary, and survive a missing one", () => {
+  const summary = { total: 6, categories: { BL_COMPARISON: 3 }, defects: 1, statuses: { NEEDS_REVIEW: 2 } };
+  assert.deepEqual(reportTiles(summary).map((t) => t.value), [6, 3, 1, 2]);
+  assert.deepEqual(reportTiles().map((t) => t.value), [0, 0, 0, 0]);
+});
+
+test("the escalation note explains failures first, then unreadable files, else nothing", () => {
+  assert.match(escalationNote({ review_reasons: { processing_error: 2, unreadable: 9 } }), /^2 emails could not be processed/);
+  assert.match(escalationNote({ review_reasons: { unreadable: 1 } }), /^1 email carry an attachment/);
+  assert.equal(escalationNote({ review_reasons: { missing_value: 4 } }), null);
+  assert.equal(escalationNote(), null);
+});
+
+test("report groups follow the label order, count what is inside, and honour the filters", () => {
+  const order = ["BL_COMPARISON", "SI_REQUEST", "INVOICE_QUERY", "GENERAL", "SPAM"];
+  const groups = reportGroups(ROWS, {}, order);
+  assert.deepEqual(groups.map((g) => g.category), ["BL_COMPARISON", "SI_REQUEST", "GENERAL", "SPAM"]);
+  assert.deepEqual(groups[0].items.map((r) => r.email_id), ["e4", "e2", "e1"]);
+  assert.equal(groups[0].mismatches, 1);
+  assert.equal(groups[0].reviews, 1);
+  assert.deepEqual(reportGroups(ROWS, { status: "MISMATCH" }, order).map((g) => g.category), ["BL_COMPARISON"]);
+  assert.deepEqual(reportGroups(ROWS, { q: "watches" }, order).map((g) => g.items[0].email_id), ["e3"]);
+  assert.deepEqual(reportGroups(ROWS, { q: "zzz" }, order), []);
+  // a label the order does not know about is still listed, after the known ones
+  assert.equal(reportGroups([row("x", "NEW_KIND", "OK")], {}, order)[0].category, "NEW_KIND");
 });

@@ -6,10 +6,6 @@ const COPY = {
     title: "Review",
     text: "This tab is still being designed. It will be where a person confirms or corrects what the system could not settle.",
   },
-  report: {
-    title: "Report",
-    text: "This tab is still being designed. It will hold the discrepancy report.",
-  },
 };
 
 export function mountSoon(root, { tab }) {
