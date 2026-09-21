@@ -335,7 +335,9 @@ $("theme").addEventListener("click", () => {
   document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
 });
 
-fetch("report.json")
+// no-store: the file is rewritten after every run, and a cached copy would
+// silently show a stale snapshot of the inbox.
+fetch("report.json", { cache: "no-store" })
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then(d => {
     DATA = d;

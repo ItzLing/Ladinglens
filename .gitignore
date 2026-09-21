@@ -239,3 +239,6 @@ data/docker-compose.yml
 # only its README is tracked
 results/*
 !results/README.md
+
+# OCR transcriptions cached per document hash -- regenerated on demand.
+ocr_cache/
