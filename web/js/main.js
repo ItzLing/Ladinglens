@@ -8,6 +8,7 @@ import { mountHome } from "./views/home.js";
 import { mountParsing } from "./views/parsing.js";
 import { mountData } from "./views/data.js";
 import { mountReport } from "./views/report.js";
+import { mountReview } from "./views/review.js";
 import { mountSoon } from "./views/soon.js";
 
 const railEl = document.getElementById("rail");
@@ -70,6 +71,10 @@ function mountTab() {
     app.view.setId(id);
   } else if (tab === "data") app.view = mountData(contentEl, ctx);
   else if (tab === "report") app.view = mountReport(contentEl, ctx);
+  else if (tab === "review") {
+    app.view = mountReview(contentEl, ctx);
+    app.view.setId(id);
+  }
   else app.view = mountSoon(contentEl, { tab });
   app.runbar?.render();
 }
@@ -80,6 +85,10 @@ function onRoute() {
   app.route = parseRoute(location.hash);
   // moving between emails inside Parsing keeps the list, its scroll and its search as they are
   if (app.route.tab === "parsing" && mountedTab === "parsing" && previous.tab === "parsing") {
+    app.view.setId(app.route.id);
+    return;
+  }
+  if (app.route.tab === "review" && mountedTab === "review" && previous.tab === "review") {
     app.view.setId(app.route.id);
     return;
   }
@@ -112,7 +121,7 @@ function showError(err) {
   announce("Could not load results.");
 }
 
-// ---- keyboard: j / k move through the list, / searches, g then h / p / d jumps ----
+// ---- keyboard: j / k move through the list, / searches, g then h / p / v / r / d jumps ----
 let goPending = false;
 addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -120,12 +129,12 @@ addEventListener("keydown", (e) => {
   if (typing) { if (e.key === "Escape") e.target.blur(); return; }
   if (goPending) {
     goPending = false;
-    const target = { h: "#/", p: "#/parsing", r: "#/report", d: "#/data" }[e.key];
+    const target = { h: "#/", p: "#/parsing", v: "#/review", r: "#/report", d: "#/data" }[e.key];
     if (target) { location.hash = target; e.preventDefault(); }
     return;
   }
   if (e.key === "g") { goPending = true; return; }
-  if (app.route.tab !== "parsing" || !app.view) return;
+  if (!["parsing", "review"].includes(app.route.tab) || !app.view) return;
   if (e.key === "j") { app.view.move(1); e.preventDefault(); }
   else if (e.key === "k") { app.view.move(-1); e.preventDefault(); }
   else if (e.key === "/") { app.view.focusSearch(); e.preventDefault(); }

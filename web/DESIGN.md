@@ -283,8 +283,17 @@ from ZuYenn's redesign added. From the top:
 
 It reads the same report as Home and Parsing, so it works in the live app and in the demo.
 
-Home also shows ZuYenn's four-step route (Classify, Extract, Compare, Review) and the three
-outcome cards (primary user, business value, decision rule).
+Home is ZuYenn's dashboard ("Shipping operations console"): the hero with the four-step route
+(Classify, Extract, Compare, Review), five headline tiles, the Inbox mix, and a searchable
+review queue. A queue row opens the email in Parsing, or in Review when it needs a person.
+
+### 6.7 Theme
+
+Light and dark share one set of tokens (`tokens.css`); nothing in the views sets its own colours.
+The button at the bottom of the rail switches between them, follows the system theme until the
+reader chooses, and remembers the choice (`localStorage`, key `ladinglens-theme`). A small inline
+script in `index.html` applies the saved theme before the first paint, so a dark page never
+flashes light.
 
 ## 7. Shared design
 
