@@ -96,7 +96,7 @@
   .subtitle { margin: 3px 0 0; color: var(--text-soft); font-size: 13px; }
   .actions { display: flex; align-items: center; gap: 10px; }
   .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .icon-btn, .text-btn {
+  .icon-btn, .text-btn, .primary-btn {
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--text-soft);
@@ -105,7 +105,26 @@
   }
   .icon-btn { width: 38px; display: grid; place-items: center; font-size: 16px; }
   .text-btn { padding: 0 13px; }
+  .primary-btn {
+    padding: 0 14px;
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+    font-weight: 680;
+  }
   .icon-btn:hover, .text-btn:hover { border-color: var(--line-strong); color: var(--text); }
+  .primary-btn:hover { background: var(--brand-strong); border-color: var(--brand-strong); }
+  .mode-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface-soft);
+    color: var(--text-soft);
+    font-size: 12px;
+  }
 
   .hero {
     display: grid;
@@ -154,6 +173,20 @@
   .step-num { color: var(--brand); font-weight: 800; font-size: 12px; }
   .route-step strong { display: block; margin-top: 8px; font-size: 13px; }
   .route-step span { display: block; margin-top: 3px; color: var(--text-muted); font-size: 12px; }
+  .outcomes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .outcome {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .outcome span { display: block; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+  .outcome strong { display: block; margin-top: 5px; font-size: 13px; }
 
   .summary {
     display: grid;
@@ -202,6 +235,16 @@
     padding: 11px 12px;
     font-size: 12.5px;
   }
+  .snapshot { display: grid; gap: 10px; margin-bottom: 15px; }
+  .insight {
+    border: 1px solid var(--line);
+    background: var(--surface-soft);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .insight span { display: block; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+  .insight strong { display: block; margin-top: 5px; font-size: 18px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .insight small { display: block; margin-top: 5px; color: var(--text-soft); font-size: 12px; }
 
   .desk { min-width: 0; }
   .toolbar {
@@ -254,7 +297,7 @@
   }
   .count { color: var(--text-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
   .table-scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; min-width: 850px; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; min-width: 1060px; font-size: 13px; }
   th, td { text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   th {
     color: var(--text-muted);
@@ -273,6 +316,22 @@
   .subject strong { display: block; color: var(--text); font-weight: 650; }
   .subject span { display: block; margin-top: 3px; color: var(--text-muted); font-size: 12px; max-width: 52ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fields { color: var(--text-soft); font-size: 12px; max-width: 220px; }
+  .priority {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 68px;
+    min-height: 25px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .priority.high { color: var(--bad); background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+  .priority.medium { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+  .priority.low { color: var(--good); background: var(--good-bg); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+  .next-step { color: var(--text-soft); font-size: 12.5px; max-width: 230px; }
   .confidence { display: grid; grid-template-columns: 46px 92px; gap: 9px; align-items: center; color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
   .conf-track { height: 7px; border-radius: 99px; background: var(--surface-soft); overflow: hidden; }
   .conf-fill { height: 100%; border-radius: inherit; background: var(--accent); }
@@ -329,7 +388,7 @@
   }
   .dlg-title { font-size: 17px; font-weight: 760; margin: 0 0 4px; }
   .dlg-body { padding: 18px 20px 22px; }
-  .detail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
   .detail-item { border: 1px solid var(--line); background: var(--surface-soft); border-radius: 8px; padding: 12px; }
   .detail-item span { display: block; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
   .detail-item strong { display: block; margin-top: 6px; font-size: 13px; word-break: break-word; }
@@ -361,8 +420,8 @@
   @media (max-width: 720px) {
     .shell { padding: 14px; }
     .topbar, .toolbar, .table-head { align-items: stretch; flex-direction: column; display: flex; }
-    .actions, .filters { justify-content: flex-start; }
-    .route, .summary, .detail-grid, .docs { grid-template-columns: 1fr; }
+    .actions, .filters { justify-content: flex-start; flex-wrap: wrap; }
+    .route, .summary, .detail-grid, .docs, .outcomes { grid-template-columns: 1fr; }
     .mission { padding: 18px; }
     .mission h2 { font-size: 32px; }
     .meta#stamp { display: none; }
@@ -381,6 +440,9 @@
     </div>
     <div class="actions">
       <span class="meta" id="stamp"></span>
+      <span class="mode-pill" id="mode">Live report</span>
+      <button class="text-btn" id="copy-summary" type="button">Copy summary</button>
+      <button class="primary-btn" id="export-csv" type="button">Export CSV</button>
       <button class="icon-btn" id="theme" type="button" title="Toggle theme" aria-label="Toggle theme">&#9680;</button>
     </div>
   </header>
@@ -389,13 +451,18 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="mission">
         <p class="eyebrow">Shipping operations console</p>
-        <h2 id="hero-title">Find the emails that matter, then prove every document difference.</h2>
-        <p>Every message is classified first. Only document comparison requests move into field extraction, mismatch checking, and human review when the system cannot decide confidently.</p>
+        <h2 id="hero-title">A control desk for shipping document risk.</h2>
+        <p>Business users can see which emails need attention, which documents already match, and exactly what must be fixed before the draft Bill of Lading is finalized.</p>
         <div class="route" aria-label="Processing route">
           <div class="route-step"><span class="step-num">01</span><strong>Classify</strong><span>Sort inbox messages by intent.</span></div>
           <div class="route-step"><span class="step-num">02</span><strong>Extract</strong><span>Read SI and draft BL fields.</span></div>
           <div class="route-step"><span class="step-num">03</span><strong>Compare</strong><span>Flag mismatched shipment values.</span></div>
           <div class="route-step"><span class="step-num">04</span><strong>Review</strong><span>Escalate uncertain cases with evidence.</span></div>
+        </div>
+        <div class="outcomes" aria-label="Business outcomes">
+          <div class="outcome"><span>Primary user</span><strong>Shipping operations team</strong></div>
+          <div class="outcome"><span>Business value</span><strong>Less manual checking, fewer BL corrections</strong></div>
+          <div class="outcome"><span>Decision rule</span><strong>Escalate when unsure; never guess</strong></div>
         </div>
       </div>
       <div class="summary" id="tiles"></div>
@@ -408,6 +475,7 @@
           <p class="cap">Classification count by email category.</p>
         </div>
         <div class="panel-body">
+          <div class="snapshot" id="snapshot"></div>
           <div class="bars" id="bars"></div>
           <div class="banner" id="banner" hidden></div>
         </div>
@@ -431,13 +499,13 @@
           <div class="table-head">
             <div>
               <h3>Review queue</h3>
-              <p class="cap">Select an email to inspect classification, mismatches, source text and escalation context.</p>
+              <p class="cap">Prioritized by business action: fix mismatches first, then review uncertain cases, then archive clean checks.</p>
             </div>
             <span class="count" id="count"></span>
           </div>
           <div class="table-scroll">
             <table>
-              <thead><tr><th>Email</th><th>Subject</th><th>Category</th><th>Result</th><th>Confidence</th><th>Fields flagged</th></tr></thead>
+              <thead><tr><th>Priority</th><th>Email</th><th>Subject</th><th>Category</th><th>Result</th><th>Confidence</th><th>Next step</th><th>Fields flagged</th></tr></thead>
               <tbody id="rows"></tbody>
             </table>
           </div>
@@ -468,6 +536,92 @@ const REASON = { unreadable:"Document unreadable", missing_attachment:"Attachmen
 const CAT_ORDER = ["BL_COMPARISON","SI_REQUEST","INVOICE_QUERY","GENERAL","SPAM"];
 const STATUS_LABEL = { OK:"No mismatch", MISMATCH:"Mismatch", NEEDS_REVIEW:"Needs review" };
 const STATUS_ORDER = ["", "MISMATCH", "NEEDS_REVIEW", "OK"];
+const DEMO_EMAILS = [
+  {
+    email_id: "email_demo_001",
+    subject: "Please verify SI against draft BL - Ocean Crest 4821",
+    from: "ops@blueharbor-logistics.com",
+    body: "Kindly check the attached Shipping Instruction and draft Bill of Lading before final release.",
+    category: "BL_COMPARISON",
+    status: "MISMATCH",
+    confidence: 0.94,
+    has_defect: true,
+    defect_fields: ["container_count", "port_of_discharge"],
+    mismatches: {
+      container_count: { si: "3", bl: "4" },
+      port_of_discharge: { si: "Port Klang", bl: "Singapore" }
+    },
+    attachments: ["OC4821_SI.txt", "OC4821_BL.txt"],
+    si_text: "SHIPPER: Blue Harbor Logistics\nCONSIGNEE: Meridian Retail Sdn Bhd\nPORT OF LOADING: Shanghai\nPORT OF DISCHARGE: Port Klang\nCONTAINER COUNT: 3\nGROSS WEIGHT KG: 22000",
+    bl_text: "SHIPPER: Blue Harbor Logistics\nCONSIGNEE: Meridian Retail Sdn Bhd\nLOAD PORT: Shanghai\nDISCHARGE PORT: Singapore\nCONTAINERS: 4\nGROSS WEIGHT KG: 22000"
+  },
+  {
+    email_id: "email_demo_002",
+    subject: "Draft BL ready for checking - Atlas shipment",
+    from: "documentation@atlasfreight.example",
+    body: "Documents attached for final verification.",
+    category: "BL_COMPARISON",
+    status: "OK",
+    confidence: 0.91,
+    has_defect: false,
+    defect_fields: [],
+    mismatches: {},
+    attachments: ["AT209_SI.txt", "AT209_BL.txt"]
+  },
+  {
+    email_id: "email_demo_003",
+    subject: "Invoice question for last week's booking",
+    from: "finance@northstar-trading.example",
+    body: "Can you confirm whether the detention charge belongs to booking NS-778?",
+    category: "INVOICE_QUERY",
+    status: "OK",
+    confidence: 0.88,
+    has_defect: false,
+    defect_fields: [],
+    mismatches: {},
+    attachments: []
+  },
+  {
+    email_id: "email_demo_004",
+    subject: "Urgent: scanned documents for BL review",
+    from: "export@pacificfruit.example",
+    body: "The SI and BL are attached as scanned PDF documents.",
+    category: "BL_COMPARISON",
+    status: "NEEDS_REVIEW",
+    review_reason: "unreadable",
+    confidence: 0.63,
+    has_defect: false,
+    defect_fields: [],
+    mismatches: {},
+    attachments: ["PF881_SI_scanned.pdf", "PF881_BL_scanned.pdf"]
+  },
+  {
+    email_id: "email_demo_005",
+    subject: "New shipping instruction request",
+    from: "booking@solara-goods.example",
+    body: "Please prepare a new SI for the attached commercial shipment details.",
+    category: "SI_REQUEST",
+    status: "OK",
+    confidence: 0.9,
+    has_defect: false,
+    defect_fields: [],
+    mismatches: {},
+    attachments: ["commercial_invoice.pdf"]
+  },
+  {
+    email_id: "email_demo_006",
+    subject: "Limited time logistics offer",
+    from: "promo@example-mailer.com",
+    body: "Click here for discounted freight forwarding services.",
+    category: "SPAM",
+    status: "OK",
+    confidence: 0.96,
+    has_defect: false,
+    defect_fields: [],
+    mismatches: {},
+    attachments: []
+  }
+];
 
 let DATA = null;
 let rows = [];
@@ -496,6 +650,66 @@ function fieldList(e) {
   return (e.defect_fields || []).map(f => FIELD[f] || f).join(", ");
 }
 
+function summarize(emails) {
+  const count = arr => arr.reduce((acc, item) => (acc[item] = (acc[item] || 0) + 1, acc), {});
+  return {
+    total: emails.length,
+    categories: count(emails.map(e => e.category)),
+    statuses: count(emails.map(e => e.status)),
+    review_reasons: count(emails.filter(e => e.review_reason).map(e => e.review_reason)),
+    defects: emails.filter(e => e.has_defect).length,
+  };
+}
+
+function normalizedReport(d) {
+  if (d.emails && d.emails.length) return { ...d, demo: false };
+  const demo = DEMO_EMAILS.map(e => ({ ...e }));
+  return {
+    generated_at: new Date().toISOString(),
+    summary: summarize(demo),
+    emails: demo,
+    demo: true,
+  };
+}
+
+function priorityKind(e) {
+  if (e.status === "MISMATCH") return "high";
+  if (e.status === "NEEDS_REVIEW") return "medium";
+  return "low";
+}
+
+function priorityLabel(e) {
+  const k = priorityKind(e);
+  return k === "high" ? "High" : k === "medium" ? "Medium" : "Low";
+}
+
+function priorityChip(e) {
+  const k = priorityKind(e);
+  return `<span class="priority ${k}">${priorityLabel(e)}</span>`;
+}
+
+function nextStep(e) {
+  if (e.status === "MISMATCH") return "Ask documentation team to correct the flagged BL fields.";
+  if (e.status === "NEEDS_REVIEW") return "Send to a human reviewer with attachments and reason.";
+  if (e.category === "BL_COMPARISON") return "Approve document check and continue release workflow.";
+  if (e.category === "SPAM") return "Archive or block sender.";
+  if (e.category === "INVOICE_QUERY") return "Route to finance or billing queue.";
+  if (e.category === "SI_REQUEST") return "Route to SI preparation queue.";
+  return "No document check needed.";
+}
+
+function renderSnapshot() {
+  const s = DATA.summary;
+  const total = Math.max(1, s.total || 0);
+  const autoDone = (s.statuses.OK || 0) + (s.statuses.MISMATCH || 0);
+  const action = (s.statuses.MISMATCH || 0) + (s.statuses.NEEDS_REVIEW || 0);
+  const compared = s.categories.BL_COMPARISON || 0;
+  $("snapshot").innerHTML = `
+    <div class="insight"><span>Automation ready</span><strong>${Math.round(autoDone / total * 100)}%</strong><small>classified or compared without manual triage</small></div>
+    <div class="insight"><span>Action required</span><strong>${action}</strong><small>mismatches plus review cases</small></div>
+    <div class="insight"><span>Document checks</span><strong>${compared}</strong><small>emails routed into SI/BL verification</small></div>`;
+}
+
 function renderTiles() {
   const s = DATA.summary;
   const reviewed = s.statuses.NEEDS_REVIEW || 0;
@@ -518,8 +732,9 @@ function renderTiles() {
   const r = s.review_reasons || {};
   const plural = n => n === 1 ? "email" : "emails";
   let note = "";
-  if (s.total === 0) {
-    note = "This report currently has no emails. Run the pipeline, rebuild web/report.json, then refresh this page to see the review queue.";
+  $("banner").hidden = true;
+  if (DATA.demo) {
+    note = "Demo data is shown because web/report.json has no emails yet. Run the pipeline and rebuild the report to switch this dashboard to live results.";
   } else if (r.processing_error) {
     note = `${r.processing_error} ${plural(r.processing_error)} could not be processed because the model API failed. They are escalated instead of guessed and can be retried.`;
   } else if (r.unreadable) {
@@ -569,12 +784,11 @@ function apply() {
   const st = activeStatus || $("f-status").value;
   const q = $("f-q").value.trim().toLowerCase();
   rows = DATA.emails.filter(e => {
-    const searchable = [e.email_id, e.subject, e.from, e.body, LABEL[e.category], statusText(e), fieldList(e)].join(" ").toLowerCase();
+    const searchable = [e.email_id, e.subject, e.from, e.body, LABEL[e.category], statusText(e), fieldList(e), priorityLabel(e), nextStep(e)].join(" ").toLowerCase();
     return (!cat || e.category === cat) && (!st || e.status === st) && (!q || searchable.includes(q));
   });
   rows.sort((a, b) =>
-    (Number(b.has_defect) - Number(a.has_defect)) ||
-    (Number(b.status === "NEEDS_REVIEW") - Number(a.status === "NEEDS_REVIEW")) ||
+    ({ high: 0, medium: 1, low: 2 }[priorityKind(a)] - { high: 0, medium: 1, low: 2 }[priorityKind(b)]) ||
     a.email_id.localeCompare(b.email_id)
   );
 
@@ -582,11 +796,13 @@ function apply() {
   $("empty").hidden = rows.length > 0;
   $("rows").innerHTML = rows.map((e, i) => `
     <tr tabindex="0" data-i="${i}">
+      <td>${priorityChip(e)}</td>
       <td class="id">${esc(e.email_id.replace("email_", "#"))}</td>
       <td class="subject"><strong>${esc(e.subject || "(no subject)")}</strong><span>${esc(e.from || "unknown sender")}</span></td>
       <td>${esc(LABEL[e.category] || e.category)}</td>
       <td>${statusChip(e)}</td>
       <td>${confidenceMeter(e)}</td>
+      <td class="next-step">${esc(nextStep(e))}</td>
       <td class="fields">${fieldList(e) ? esc(fieldList(e)) : "-"}</td>
     </tr>`).join("");
 }
@@ -597,10 +813,11 @@ function openEmail(e) {
   const fields = Object.keys(e.mismatches || {});
 
   let html = `<div class="detail-grid">
+      <div class="detail-item"><span>Priority</span><strong>${priorityChip(e)}</strong></div>
       <div class="detail-item"><span>Category</span><strong>${esc(LABEL[e.category] || e.category)}</strong></div>
       <div class="detail-item"><span>Result</span><strong>${statusChip(e)}</strong></div>
       <div class="detail-item"><span>Confidence</span><strong>${pct(e.confidence)}</strong></div>
-      <div class="detail-item"><span>Attachments</span><strong>${esc((e.attachments || []).length)}</strong></div>
+      <div class="detail-item"><span>Next step</span><strong>${esc(nextStep(e))}</strong></div>
     </div>`;
 
   if (fields.length) {
@@ -628,6 +845,61 @@ function openEmail(e) {
 
   $("d-body").innerHTML = html;
   $("dlg").showModal();
+}
+
+function executiveSummary() {
+  const s = DATA.summary;
+  const action = (s.statuses.MISMATCH || 0) + (s.statuses.NEEDS_REVIEW || 0);
+  return [
+    `Ladinglens ${DATA.demo ? "demo" : "live"} report`,
+    `Emails processed: ${s.total}`,
+    `Comparison requests: ${s.categories.BL_COMPARISON || 0}`,
+    `Mismatches found: ${s.defects}`,
+    `Needs human review: ${s.statuses.NEEDS_REVIEW || 0}`,
+    `Action required: ${action}`,
+  ].join("\n");
+}
+
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  document.execCommand("copy");
+  ta.remove();
+  return Promise.resolve();
+}
+
+function csvCell(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+function exportCsv() {
+  const header = ["priority", "email_id", "subject", "from", "category", "result", "confidence", "next_step", "fields_flagged"];
+  const lines = [header.map(csvCell).join(",")].concat(rows.map(e => [
+    priorityLabel(e),
+    e.email_id,
+    e.subject,
+    e.from,
+    LABEL[e.category] || e.category,
+    statusText(e),
+    pct(e.confidence),
+    nextStep(e),
+    fieldList(e),
+  ].map(csvCell).join(",")));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = DATA.demo ? "ladinglens-demo-review-queue.csv" : "ladinglens-review-queue.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 $("rows").addEventListener("click", ev => { const tr = ev.target.closest("tr[data-i]"); if (tr) openEmail(rows[+tr.dataset.i]); });
@@ -660,13 +932,22 @@ $("theme").addEventListener("click", () => {
   const dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
 });
+$("copy-summary").addEventListener("click", () => {
+  copyText(executiveSummary()).then(() => {
+    $("copy-summary").textContent = "Copied";
+    setTimeout(() => $("copy-summary").textContent = "Copy summary", 1400);
+  });
+});
+$("export-csv").addEventListener("click", exportCsv);
 
 fetch("report.json")
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then(d => {
-    DATA = d;
+    DATA = normalizedReport(d);
     $("stamp").textContent = "Run of " + new Date(d.generated_at).toLocaleString();
+    $("mode").textContent = DATA.demo ? "Demo data" : "Live report";
     renderTiles();
+    renderSnapshot();
     renderBars();
     renderFilters();
     renderTabs();
