@@ -8,3 +8,4 @@ python-docx
 openpyxl
 pillow
 pytesseract
+pymongo
