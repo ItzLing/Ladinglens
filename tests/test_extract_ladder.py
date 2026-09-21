@@ -378,7 +378,7 @@ class RunIntegrationTests(unittest.TestCase):
 
         email = {"email_id": "email_1", "attachments": ["a/e_SI.pdf", "a/e_BL.pdf"]}
         with mock.patch.object(run, "classify_email",
-                               return_value=(EmailCategory.BL_COMPARISON, 0.9)), \
+                               return_value=(EmailCategory.BL_COMPARISON, 0.9, "SI and BL sent for checking.")), \
                 mock.patch.object(run, "extract_document", side_effect=[si, bl]):
             return run, run.process_email(email, inbox=None)
 
@@ -412,6 +412,117 @@ class RunIntegrationTests(unittest.TestCase):
         self.assertFalse(result.needs_review)
         self.assertTrue(result.mismatch_found)
         self.assertEqual(list(result.mismatches), ["gross_weight_kg"])
+
+    def test_the_summary_and_every_extracted_value_are_kept(self):
+        si = ExtractionResult(file="a_SI", fields=self.fields(), sources={"shipper": "text"})
+        bl = ExtractionResult(file="a_BL", fields=self.fields(gross_weight_kg="131,059 KG"))
+        run, result = self.process(si, bl)
+        self.assertEqual(result.summary, "SI and BL sent for checking.")
+        self.assertEqual(set(result.extracted), {"SI", "BL"})
+        self.assertEqual(result.extracted["SI"].fields["shipper"], "ACME")
+        self.assertEqual(result.extracted["BL"].fields["gross_weight_kg"], "131,059 KG")
+        self.assertEqual(result.extracted["SI"].sources, {"shipper": "text"})
+        record = run._record(result)
+        self.assertEqual(record["summary"], "SI and BL sent for checking.")
+        self.assertEqual(record["extracted"]["SI"]["file"], "a_SI")
+
+    def test_extracted_values_are_kept_even_when_a_field_needs_review(self):
+        issue = FieldIssue(document="BL", file="a_BL", field="gross_weight_kg",
+                           reason=FieldIssueReason.UNREADABLE, detail="d", source="vision")
+        si = ExtractionResult(file="a_SI", fields=self.fields())
+        bl = ExtractionResult(file="a_BL", fields=self.fields(gross_weight_kg=None), issues=[issue])
+        _, result = self.process(si, bl)
+        self.assertTrue(result.needs_review)
+        self.assertIsNone(result.extracted["BL"].fields["gross_weight_kg"])
+        self.assertEqual(result.extracted["BL"].fields["shipper"], "ACME")
+
+    def test_the_summary_never_reaches_the_submission(self):
+        si = ExtractionResult(file="a", fields=self.fields())
+        bl = ExtractionResult(file="b", fields=self.fields())
+        run, result = self.process(si, bl)
+        self.assertEqual(set(result.to_submission()), set(run.SUBMISSION_KEYS))
+
+
+class RealLadderThroughRunTests(unittest.TestCase):
+    """process_email with the real extraction ladder, mocking only the model.
+
+    The other run tests patch run.extract_document, so they cannot notice if run.py
+    and the ladder stop fitting together. These do not patch it.
+    """
+
+    class Inbox:
+        def read_bytes(self, path):
+            return b"Shipper: ACME LTD\nGross Weight: 131,058 KG\n"
+
+    def fields(self, **overrides):
+        base = dict(shipper="ACME LTD", consignee="BOB LLC", notify_party="BOB LLC",
+                    port_of_loading="SINGAPORE", port_of_discharge="KARACHI",
+                    container_count="6 x 40'HC", gross_weight_kg="131,058 KG")
+        return ShipmentFields(**{**base, **overrides})
+
+    def process(self, extract_reply):
+        from app.pipeline import extract, run
+
+        email = {"email_id": "e1", "attachments": ["a/e1_SI.txt", "a/e1_BL.txt"]}
+        with mock.patch.object(run, "classify_email",
+                               return_value=(EmailCategory.BL_COMPARISON, 0.9, "A check.")), \
+                mock.patch.object(extract, "extract_fields", **extract_reply):
+            return run.process_email(email, self.Inbox())
+
+    def test_a_clean_pair_is_compared_and_every_value_is_kept(self):
+        result = self.process({"side_effect": [self.fields(), self.fields(gross_weight_kg="131,059 KG")]})
+        self.assertFalse(result.needs_review, result.review_reason)
+        self.assertEqual(list(result.mismatches), ["gross_weight_kg"])
+        self.assertEqual(result.summary, "A check.")
+        self.assertEqual(result.extracted["SI"].fields["shipper"], "ACME LTD")
+        self.assertEqual(result.extracted["BL"].fields["gross_weight_kg"], "131,059 KG")
+        self.assertIsNone(result.failure_stage)
+
+    def test_an_unsettled_field_is_reported_with_the_stage_that_found_it(self):
+        result = self.process({"side_effect": [self.fields(gross_weight_kg="____MT"), self.fields()]})
+        self.assertEqual(result.review_reason, ReviewReason.MISSING_VALUE)
+        self.assertEqual(result.failure_stage, "field_validation")
+        self.assertEqual([i.field for i in result.field_issues], ["gross_weight_kg"])
+        self.assertEqual(result.extracted["SI"].fields["shipper"], "ACME LTD")
+
+    def test_a_model_outage_inside_the_ladder_is_a_processing_error_at_that_stage(self):
+        from app.llm_client import LLMUnavailableError
+
+        result = self.process({"side_effect": LLMUnavailableError("429")})
+        self.assertEqual(result.review_reason, ReviewReason.PROCESSING_ERROR)
+        self.assertEqual(result.failure_stage, "si_extraction")
+        self.assertEqual(result.category, EmailCategory.BL_COMPARISON)
+        self.assertEqual(result.summary, "A check.")  # what was known is kept
+
+    def test_a_bad_reply_from_the_model_is_unreadable_at_the_si_stage(self):
+        result = self.process({"side_effect": ValueError("not json")})
+        self.assertEqual(result.review_reason, ReviewReason.UNREADABLE)
+        self.assertEqual(result.failure_stage, "si_extraction")
+
+
+class ClassifySummaryTests(unittest.TestCase):
+    def classify(self, reply):
+        from app.pipeline import classify
+
+        with mock.patch.object(classify, "call_json", return_value=reply):
+            return classify.classify_email({"subject": "s", "from": "f", "body": "b"})
+
+    def test_summary_is_returned_and_tidied(self):
+        category, confidence, summary = self.classify(
+            {"category": "SPAM", "confidence": 0.9, "summary": "  Unsolicited   offer\nfor cheap watches. "}
+        )
+        self.assertEqual(category, EmailCategory.SPAM)
+        self.assertEqual(summary, "Unsolicited offer for cheap watches.")
+
+    def test_a_long_summary_is_cut(self):
+        _, _, summary = self.classify({"category": "GENERAL", "confidence": 1, "summary": "word " * 100})
+        self.assertLessEqual(len(summary), 200)
+
+    def test_a_missing_or_blank_summary_is_none_not_an_error(self):
+        for reply in ({"category": "GENERAL", "confidence": 1},
+                      {"category": "GENERAL", "confidence": 1, "summary": "  "},
+                      {"category": "GENERAL", "confidence": 1, "summary": None}):
+            self.assertIsNone(self.classify(reply)[2])
 
 
 if __name__ == "__main__":

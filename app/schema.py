@@ -65,6 +65,14 @@ class ExtractionResult(BaseModel):
     issues: list[FieldIssue] = []
 
 
+class ExtractedDocument(BaseModel):
+    """The 7 values read from one document, kept so a reviewer can see all of them."""
+
+    file: str
+    fields: dict[str, Optional[str]]  # None where the field could not be settled
+    sources: dict[str, str] = {}  # accepted field -> "text", "ocr", "ocr_llm" or "vision"
+
+
 class ComparisonResult(BaseModel):
     email_id: str
     category: EmailCategory
@@ -76,6 +84,12 @@ class ComparisonResult(BaseModel):
     needs_review: bool = False
     review_reason: Optional[ReviewReason] = None
     field_issues: list[FieldIssue] = []
+    # Internal, like confidence: one sentence on what the email is about, and the
+    # values read from each document ("SI" / "BL"). Never part of the submission.
+    summary: Optional[str] = None
+    extracted: dict[str, ExtractedDocument] = {}
+    # Internal operational detail; deliberately absent from evaluator output.
+    failure_stage: Optional[str] = None
 
     def to_submission(self) -> dict:
         """Map to the hackathon's sample_submission.json shape."""

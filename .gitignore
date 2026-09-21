@@ -242,3 +242,6 @@ results/*
 
 # OCR transcriptions cached per document hash -- regenerated on demand.
 ocr_cache/
+
+# local Claude Code tooling
+.claude/
