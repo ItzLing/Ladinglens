@@ -3,3 +3,7 @@ uvicorn[standard]
 pydantic>=2
 openai
 python-dotenv
+pypdf
+python-docx
+openpyxl
+pillow
