@@ -150,6 +150,9 @@ activemq-data/
 # Environments
 .env
 .envrc
+# any .env variant (.env.local, .env.bak.*) -- these carry real keys.
+.env.*
+!.env.example
 .venv
 env/
 venv/
@@ -225,3 +228,14 @@ data/attachments
 data/inbox
 data/sample_submission.json
 data/README.md
+
+# hackathon bundle -- never commit. data_v2/ carries ground_truth.json (the
+# answer key) and server/ carries the scorer; both are organizer-only material.
+data/data_v2/
+data/server/
+data/docker-compose.yml
+
+# pipeline run results (including *.sample.* from limited runs) all live in results/;
+# only its README is tracked
+results/*
+!results/README.md

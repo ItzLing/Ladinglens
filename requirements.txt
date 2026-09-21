@@ -1,5 +1,10 @@
 fastapi
 uvicorn[standard]
 pydantic>=2
-anthropic
+openai
 python-dotenv
+pypdf
+python-docx
+openpyxl
+pillow
+pytesseract
