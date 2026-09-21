@@ -744,3 +744,66 @@ emails caught.
 - Try 2x upscaling in `ocr_lines()`, measured against the vision-call count.
 
 **Synced through:** `c456daf` (committed by task: `65b57e0`, `6089248`, `e68e4f3`, `8d971e6`, `f283634`, `ccdd548`, `654d1e0`, `c456daf`)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (results/ folder, one inbox path, clean-up)
+
+**What changed:**
+- New `results/` folder: every pipeline output now goes there (`results.jsonl`, `output.json`,
+  `classify_cache.json` and their `.sample` variants). Only `results/README.md` is tracked; it
+  explains each file and how to read a run. `.gitignore`: `results/*` + `!results/README.md`
+  replaces the three root-level patterns.
+- New `app/paths.py` is the single source for `ROOT_DIR`, `DATA_DIR`, `RESULTS_DIR`,
+  `results_file(name)` and `inbox_source()`. `main.py` (incl. `/status`) and `build_report.py`
+  use it, so they cannot drift apart again. `inbox_source()` reads `INBOX_SOURCE` (default
+  `data/`) and resolves a relative folder from the repo root, not the cwd; a URL is untouched.
+- `web/build_report.py`: **fixed a bug** -- it hard-coded `data/data_v2`, which does not exist
+  for anyone whose data is in `data/inbox` + `data/attachments`. It now uses `inbox_source()`,
+  reads `results/results.jsonl`, and gains `--sample` (for a `?limit=N` run). It exits with a
+  clear message if there are no results yet, and **warns when records are `processing_error`**.
+- Stale `data_v2` mentions fixed in `README.md`, `.env.example`; results paths fixed in
+  `README.md`, `web/README.md`, `scripts/poll.py`, and the scoring commands
+  (`results/output.json`). 6 new tests (`tests/test_paths.py`); 40 pass.
+- Cleared the branch of result clutter: deleted the untracked run files, and `git rm`'d the two
+  tracked scratch dumps `results.jsonl.bak` and `results.jsonl.afterretry` (recoverable from
+  commit `8ce18bb`: `git show 8ce18bb:results.jsonl.bak`).
+
+**Why (what the owner hit):**
+- They ran the pipeline and could not tell what it output. It output nothing useful: all 45
+  records in `results.jsonl` and all 20 in `results.sample.jsonl` were `NEEDS_REVIEW` /
+  `processing_error`, i.e. every email failed at the API (the 20/day quota on
+  `gemini-3.6-flash`). Nothing in the repo said so, which is why the build-report warning and
+  `results/README.md` were added.
+- Results were scattered across the repo root, and the inbox folder name disagreed between the
+  loader (`inbox/`, `attachments/`), the README (`data_v2/`) and `build_report.py`.
+
+**Decisions made:**
+- **The inbox layout is `<INBOX_SOURCE>/inbox/` + `<INBOX_SOURCE>/attachments/`**, fixed by
+  `data/loader.py`. `INBOX_SOURCE=data` is the default everywhere. `data_v2` survives only in
+  `.gitignore` (`data/data_v2/`), deliberately: it protects `ground_truth.json` for a teammate
+  who has the organizer bundle.
+- **`web/report.json` stays in `web/`, and stays tracked.** The dashboard is a static page
+  served from `web/` and fetches `report.json` relative to itself; serving from the repo root to
+  reach `results/` would also expose `.env` over `http.server`. It is also the data behind the
+  Vercel deploy (`web/README.md`), so deleting it would break that. It is the one output not in
+  `results/`, and `results/README.md` says so.
+- Kept the file names inside `results/` (no rename), so `resume` and the docs still line up.
+
+**Verification:**
+- Real 5-email run on `gemini-3.1-flash-lite`: 4 `OK`, 1 `MISMATCH` (`email_004`: consignee,
+  notify_party), 0 `processing_error`, all files written to `results/`, none at the repo root.
+  `build_report.py --sample` (output redirected to scratch, shipped `report.json` untouched)
+  read `data/inbox`, attached SI/BL text, and reported the same counts.
+
+**Open questions / next steps:**
+- **The dashboard UI needs redoing** (owner: "terrible"). Note the stack says Streamlit while
+  `web/` is a static page, and it does not show `field_issues` yet -- decide direction first.
+- `web/report.json` is the old 520-email report from an earlier run; regenerate it after a real
+  full run.
+- **A full run still needs quota.** `gemini-3.6-flash` allows 20 requests/day on this key; a full
+  run is ~724 calls. Use another model, a paid key, or Ollama.
+- `results/` now holds 3 real sample files from the 5-email check; delete them freely.
+
+**Synced through:** `8715675` (committed by task: `d2dc96b`, `120407d`, `a3f5a1f`, `8715675`, then docs)

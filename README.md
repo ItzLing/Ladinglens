@@ -67,9 +67,11 @@ curl -X POST http://localhost:8000/run
 Invoke-RestMethod -Method Post -Uri "http://localhost:8000/run"
 ```
 
-This writes `output.json` (the submission, keyed by `email_id`), `classify_cache.json`
-(adds each email's confidence, for sweeping the threshold offline) and `results.jsonl`
-(one line per email, written as it completes).
+Everything a run writes goes into [`results/`](results/README.md):
+`output.json` (the submission, keyed by `email_id`), `classify_cache.json` (adds each
+email's confidence, for sweeping the threshold offline) and `results.jsonl` (one line
+per email, written as it completes). **If every record says `processing_error`, nothing was
+checked** -- the model API failed, usually on quota. See `results/README.md`.
 
 ### Iterating without spending a full run
 
@@ -81,12 +83,12 @@ curl -X POST "http://localhost:8000/run?limit=20"
 Invoke-RestMethod -Method Post -Uri "http://localhost:8000/run?limit=20"
 ```
 
-Limited runs write to `output.sample.json` / `classify_cache.sample.json`, so they can't
-overwrite a full baseline -- and so the scorer is never pointed at a partial submission.
+Limited runs write `output.sample.json` / `classify_cache.sample.json` / `results.sample.jsonl`
+into `results/`, so they can't overwrite a full baseline -- and so the scorer is never pointed at a partial submission.
 
 ### Resuming an interrupted run
 
-`results.jsonl` is written per email, so a run that dies partway can be continued
+`results/results.jsonl` is written per email, so a run that dies partway can be continued
 instead of restarted. Resuming also **retries `processing_error` emails**, since those
 are API failures rather than real verdicts:
 
@@ -141,11 +143,11 @@ exposing `emails()` and `read_text()` drops in without pipeline changes.
 ## Scoring a run
 
 ```bash
-cd data/server && PYTHONIOENCODING=utf-8 python score_cli.py ../../output.json
+cd data/server && PYTHONIOENCODING=utf-8 python score_cli.py ../../results/output.json
 ```
 
 ```powershell
-$env:PYTHONIOENCODING='utf-8'; python data\server\score_cli.py output.json
+$env:PYTHONIOENCODING='utf-8'; python data\server\score_cli.py results\output.json
 ```
 
 `PYTHONIOENCODING` is needed because the scoreboard draws bar characters the Windows
@@ -159,6 +161,7 @@ for each flagged field. See [`web/README.md`](web/README.md) for deployment.
 
 ```bash
 python web/build_report.py          # regenerate web/report.json after every run
+python web/build_report.py --sample # ...or from a limited run (?limit=N)
 cd web && python -m http.server 8777
 ```
 
@@ -176,7 +179,8 @@ The bundle lives in [`data/`](data) and is gitignored -- it carries `ground_trut
 and the scorer, which are organizer-only material. Point the pipeline at it with
 `INBOX_SOURCE` in `.env`:
 
-- **Local files** (default): `INBOX_SOURCE=data/data_v2`
+- **Local files** (default): `INBOX_SOURCE=data`. The folder must hold `inbox/` (one
+  JSON per email) and `attachments/` -- those two names are fixed by `data/loader.py`.
 - **Docker dataset server**: `INBOX_SOURCE=http://localhost:8080`, started with
   `docker compose up --build` from `data/`. Only needed for the `POST /submit`
   endpoint; local scoring via `score_cli.py` needs no server.
@@ -196,14 +200,17 @@ app/
     extract.py            # stage 2: the fallback ladder -> ShipmentFields + field issues
     compare.py             # stage 3: SI vs BL -> mismatches (deterministic, no LLM)
     run.py                  # orchestrator, checkpointing, decides needs_review
+results/                 # everything a run writes (only its README is tracked)
 tests/
   test_extract_ladder.py  # the ladder, offline (OCR and LLM mocked)
 web/
-  build_report.py       # joins results.jsonl + inbox -> report.json
+  build_report.py       # joins results/results.jsonl + inbox -> report.json
   index.html             # static review dashboard (no build step)
 data/
   loader.py             # hackathon dataset loader (Inbox class)
-  data_v2/               # inbox/, attachments/, sample_submission.json
+  inbox/                 # one JSON per email
+  attachments/           # the SI / BL documents
+  sample_submission.json
   server/                 # dataset server + score_cli.py
 ```
 
