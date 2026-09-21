@@ -5,7 +5,7 @@ const PATH = { home: "", parsing: "parsing", review: "review", report: "report",
 export function parseRoute(hash) {
   const parts = String(hash ?? "").replace(/^#\/?/, "").split("/").filter(Boolean);
   const tab = parts[0] === undefined ? "home" : TABS.find((t) => PATH[t] === parts[0]) ?? "home";
-  const id = tab === "parsing" && parts[1] ? decodeURIComponent(parts[1]) : null;
+  const id = (tab === "parsing" || tab === "review") && parts[1] ? decodeURIComponent(parts[1]) : null;
   return { tab, id };
 }
 
