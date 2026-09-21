@@ -1,9 +1,16 @@
-import json
 import unittest
 from unittest.mock import patch
 
 from app.pipeline import run
-from app.schema import ComparisonResult, EmailCategory, ReviewReason, ShipmentFields
+from app.pipeline.read_document import DocumentUnreadableError
+from app.schema import (
+    ComparisonResult,
+    EmailCategory,
+    ExtractionResult,
+    ReviewReason,
+    ShipmentFields,
+)
+from app.store import is_failed
 
 
 class FakeInbox:
@@ -18,34 +25,22 @@ class FakeInbox:
 
 
 class MemoryCheckpoint:
-    def __init__(self, contents=""):
-        self.contents = contents
+    """In-memory stand-in for store.Checkpoint: reset, load and append."""
 
-    def exists(self):
-        return True
+    def __init__(self, records=()):
+        self.records = list(records)
 
-    def read_text(self):
-        return self.contents
+    def reset(self):
+        self.records = []
 
-    def write_text(self, contents):
-        self.contents = contents
+    def load(self):
+        done, failed = {}, {}
+        for record in self.records:
+            (failed if is_failed(record) else done)[record["email_id"]] = record
+        return done, failed
 
-    def open(self, mode):
-        if mode != "a":
-            raise ValueError("MemoryCheckpoint only supports append mode")
-        checkpoint = self
-
-        class Appender:
-            def __enter__(self):
-                return self
-
-            def write(self, contents):
-                checkpoint.contents += contents
-
-            def __exit__(self, exc_type, exc, traceback):
-                return False
-
-        return Appender()
+    def append(self, record):
+        self.records.append(record)
 
 
 def comparison_email(email_id="email_004", suffix="txt"):
@@ -123,15 +118,14 @@ class PipelineReliabilityTests(unittest.TestCase):
         with patch.object(
             run,
             "classify_email",
-            return_value=(EmailCategory.BL_COMPARISON, 0.9),
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
         ):
-            with patch.object(run, "read_document", return_value="document text"):
-                with patch.object(
-                    run,
-                    "extract_fields",
-                    side_effect=ValueError("malformed model output"),
-                ) as extract:
-                    result = run.process_email(email, FakeInbox([email]))
+            with patch.object(
+                run,
+                "extract_document",
+                side_effect=ValueError("malformed model output"),
+            ) as extract:
+                result = run.process_email(email, FakeInbox([email]))
 
         self.assertEqual(extract.call_count, 1)
         self.assertTrue(result.needs_review)
@@ -144,15 +138,14 @@ class PipelineReliabilityTests(unittest.TestCase):
         with patch.object(
             run,
             "classify_email",
-            return_value=(EmailCategory.BL_COMPARISON, 0.9),
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
         ):
-            with patch.object(run, "read_document", return_value="document text"):
-                with patch.object(
-                    run,
-                    "extract_fields",
-                    side_effect=run.LLMUnavailableError("provider unavailable"),
-                ) as extract:
-                    result = run.process_email(email, FakeInbox([email]))
+            with patch.object(
+                run,
+                "extract_document",
+                side_effect=run.LLMUnavailableError("provider unavailable"),
+            ) as extract:
+                result = run.process_email(email, FakeInbox([email]))
 
         self.assertEqual(extract.call_count, 1)
         self.assertEqual(result.review_reason, ReviewReason.PROCESSING_ERROR)
@@ -164,18 +157,16 @@ class PipelineReliabilityTests(unittest.TestCase):
         with patch.object(
             run,
             "classify_email",
-            return_value=(EmailCategory.BL_COMPARISON, 0.9),
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
         ):
             with patch.object(
                 run,
-                "read_document",
+                "extract_document",
                 side_effect=run.LLMUnavailableError("vision provider unavailable"),
-            ) as reader:
-                with patch.object(run, "extract_fields") as extract:
-                    result = run.process_email(email, FakeInbox([email]))
+            ) as extract:
+                result = run.process_email(email, FakeInbox([email]))
 
-        self.assertEqual(reader.call_count, 1)
-        extract.assert_not_called()
+        self.assertEqual(extract.call_count, 1)
         self.assertEqual(result.review_reason, ReviewReason.PROCESSING_ERROR)
         self.assertEqual(result.failure_stage, "si_extraction")
 
@@ -185,18 +176,16 @@ class PipelineReliabilityTests(unittest.TestCase):
         with patch.object(
             run,
             "classify_email",
-            return_value=(EmailCategory.BL_COMPARISON, 0.9),
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
         ):
             with patch.object(
                 run,
-                "read_document",
-                side_effect=ValueError("unsupported file type"),
-            ) as reader:
-                with patch.object(run, "extract_fields") as extract:
-                    result = run.process_email(email, FakeInbox([email]))
+                "extract_document",
+                side_effect=DocumentUnreadableError("unsupported file type"),
+            ) as extract:
+                result = run.process_email(email, FakeInbox([email]))
 
-        self.assertEqual(reader.call_count, 1)
-        extract.assert_not_called()
+        self.assertEqual(extract.call_count, 1)
         self.assertEqual(result.review_reason, ReviewReason.UNREADABLE)
         self.assertEqual(result.failure_stage, "si_extraction")
 
@@ -206,12 +195,12 @@ class PipelineReliabilityTests(unittest.TestCase):
         with patch.object(
             run,
             "classify_email",
-            return_value=(EmailCategory.BL_COMPARISON, 0.9),
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
         ):
-            with patch.object(run, "read_document") as reader:
+            with patch.object(run, "extract_document") as extract:
                 result = run.process_email(email, FakeInbox([email]))
 
-        reader.assert_not_called()
+        extract.assert_not_called()
         self.assertEqual(result.review_reason, ReviewReason.MISSING_ATTACHMENT)
         self.assertEqual(result.failure_stage, "attachment_identification")
 
@@ -230,16 +219,19 @@ class PipelineReliabilityTests(unittest.TestCase):
         with patch.object(
             run,
             "classify_email",
-            return_value=(EmailCategory.BL_COMPARISON, 0.9),
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
         ):
-            with patch.object(run, "read_document", return_value="document text"):
-                with patch.object(run, "extract_fields", return_value=fields):
-                    with patch.object(
-                        run,
-                        "compare_fields",
-                        side_effect=RuntimeError("private comparison detail"),
-                    ):
-                        result = run.process_email(email, FakeInbox([email]))
+            with patch.object(
+                run,
+                "extract_document",
+                return_value=ExtractionResult(file="document", fields=fields),
+            ):
+                with patch.object(
+                    run,
+                    "compare_fields",
+                    side_effect=RuntimeError("private comparison detail"),
+                ):
+                    result = run.process_email(email, FakeInbox([email]))
 
         self.assertEqual(result.review_reason, ReviewReason.PROCESSING_ERROR)
         self.assertEqual(result.failure_stage, "comparison")
@@ -289,7 +281,7 @@ class PipelineReliabilityTests(unittest.TestCase):
         with patch.object(
             run,
             "classify_email",
-            return_value=(EmailCategory.GENERAL, 0.9),
+            return_value=(EmailCategory.GENERAL, 0.9, None),
         ) as classify:
             submission, _cache = run.run_pipeline(
                 FakeInbox(emails), concurrency=3
@@ -313,7 +305,7 @@ class PipelineReliabilityTests(unittest.TestCase):
         def classify(email):
             if email["email_id"] == "email_outage":
                 raise run.LLMUnavailableError("provider unavailable")
-            return EmailCategory.GENERAL, 0.9
+            return EmailCategory.GENERAL, 0.9, None
 
         with patch.object(run, "classify_email", side_effect=classify):
             submission, _cache = run.run_pipeline(
@@ -351,9 +343,7 @@ class PipelineReliabilityTests(unittest.TestCase):
         failure = run._record(
             run._processing_error("email_retry", "classification")
         )
-        checkpoint = MemoryCheckpoint(
-            "\n".join((json.dumps(success), json.dumps(failure))) + "\n"
-        )
+        checkpoint = MemoryCheckpoint([success, failure])
         emails = [
             {"email_id": "email_done", "attachments": []},
             {"email_id": "email_retry", "attachments": []},
@@ -369,7 +359,7 @@ class PipelineReliabilityTests(unittest.TestCase):
         ) as process:
             submission, _cache = run.run_pipeline(
                 FakeInbox(emails),
-                checkpoint_path=checkpoint,
+                checkpoint=checkpoint,
                 resume=True,
                 concurrency=2,
             )
@@ -378,11 +368,8 @@ class PipelineReliabilityTests(unittest.TestCase):
         self.assertEqual(process.call_args.args[0]["email_id"], "email_retry")
         self.assertEqual(submission["email_done"]["status"], "OK")
         self.assertEqual(submission["email_retry"]["status"], "OK")
-        checkpoint_records = [
-            json.loads(line) for line in checkpoint.contents.splitlines()
-        ]
-        self.assertEqual(checkpoint_records[-1]["email_id"], "email_retry")
-        self.assertEqual(checkpoint_records[-1]["status"], "OK")
+        self.assertEqual(checkpoint.records[-1]["email_id"], "email_retry")
+        self.assertEqual(checkpoint.records[-1]["status"], "OK")
 
     def test_failure_stage_never_changes_evaluator_output_shape(self):
         result = run._processing_error("email_shape", "classification")

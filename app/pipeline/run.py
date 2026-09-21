@@ -1,8 +1,11 @@
 """Orchestrator: classify -> extract -> compare, deciding needs_review.
 
 needs_review is set explicitly at every branch below, never guessed away.
+
+Every stage is isolated: a failure in one becomes a controlled review result that
+records which stage failed (`failure_stage`), and never stops the next email. Logs
+carry the email ID, stage and error type only, never document contents.
 """
-import json
 import logging
 import os
 from collections.abc import Mapping
@@ -13,20 +16,16 @@ from app.llm_client import LLMUnavailableError, llm_request_context
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
 from app.pipeline.extract import extract_document
-from app.schema import ComparisonResult, EmailCategory, ExtractedDocument, ReviewReason
+from app.schema import (
+    ComparisonResult,
+    EmailCategory,
+    ExtractedDocument,
+    ExtractionResult,
+    ReviewReason,
+)
 from app.store import better_failure, is_failed
 
 CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.2
-
-
-def _extracted(si, bl) -> dict:
-    """Every value read from the two documents, kept alongside the verdict."""
-    return {
-        label: ExtractedDocument(
-            file=result.file, fields=result.fields.model_dump(), sources=result.sources
-        )
-        for label, result in (("SI", si), ("BL", bl))
-    }
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +53,13 @@ def _processing_error(
     stage: str,
     category: EmailCategory = EmailCategory.GENERAL,
     confidence: Optional[float] = None,
+    summary: Optional[str] = None,
 ) -> ComparisonResult:
     return ComparisonResult(
         email_id=email_id,
         category=category,
         confidence=confidence,
+        summary=summary,
         needs_review=True,
         review_reason=ReviewReason.PROCESSING_ERROR,
         failure_stage=stage,
@@ -69,28 +70,27 @@ def _extract_document(
     *,
     email_id: str,
     stage: str,
+    label: str,
     path: str,
     inbox,
-    category: EmailCategory,
-    confidence: float,
-) -> tuple[object, Optional[ComparisonResult]]:
-    """Read and extract one document, translating failure into a review result."""
+    base: dict,
+) -> tuple[Optional[ExtractionResult], Optional[ComparisonResult]]:
+    """Read and extract one document, translating failure into a review result.
+
+    `base` is the email's category, confidence and summary, kept on any failure.
+    """
     try:
         with llm_request_context(email_id, stage):
-            return extract_fields(read_document(inbox, path)), None
+            return extract_document(inbox, path, label), None
     except LLMUnavailableError as exc:
         # Provider failures say nothing about document quality.
         _log_stage_failure(email_id, stage, exc, "processing_error")
-        return None, _processing_error(
-            email_id, stage, category=category, confidence=confidence
-        )
+        return None, _processing_error(email_id, stage, **_without_id(base))
     except (ValueError, OSError) as exc:
         # Malformed output and unreadable local files are permanent for this run.
         _log_stage_failure(email_id, stage, exc, "unreadable")
         return None, ComparisonResult(
-            email_id=email_id,
-            category=category,
-            confidence=confidence,
+            **base,
             needs_review=True,
             review_reason=ReviewReason.UNREADABLE,
             failure_stage=stage,
@@ -98,9 +98,21 @@ def _extract_document(
     except Exception as exc:
         # The outer boundary remains the final guard, while this preserves stage.
         _log_stage_failure(email_id, stage, exc, "processing_error")
-        return None, _processing_error(
-            email_id, stage, category=category, confidence=confidence
+        return None, _processing_error(email_id, stage, **_without_id(base))
+
+
+def _without_id(base: dict) -> dict:
+    return {k: v for k, v in base.items() if k != "email_id"}
+
+
+def _extracted(si: ExtractionResult, bl: ExtractionResult) -> dict:
+    """Every value read from the two documents, kept alongside the verdict."""
+    return {
+        label: ExtractedDocument(
+            file=result.file, fields=result.fields.model_dump(), sources=result.sources
         )
+        for label, result in (("SI", si), ("BL", bl))
+    }
 
 
 def process_email(email: dict, inbox) -> ComparisonResult:
@@ -139,30 +151,22 @@ def process_email(email: dict, inbox) -> ComparisonResult:
 
     if not si_candidates or not bl_candidates:
         return ComparisonResult(
-            **base, needs_review=True, review_reason=ReviewReason.MISSING_ATTACHMENT
+            **base,
+            needs_review=True,
+            review_reason=ReviewReason.MISSING_ATTACHMENT,
             failure_stage="attachment_identification",
         )
 
-    si_path, bl_path = si_candidates[0], bl_candidates[0]
-
-    si_fields, failure = _extract_document(
-        email_id=email_id,
-        stage="si_extraction",
-        path=si_path,
-        inbox=inbox,
-        category=category,
-        confidence=confidence,
+    si, failure = _extract_document(
+        email_id=email_id, stage="si_extraction", label="SI",
+        path=si_candidates[0], inbox=inbox, base=base,
     )
     if failure is not None:
         return failure
 
-    bl_fields, failure = _extract_document(
-        email_id=email_id,
-        stage="bl_extraction",
-        path=bl_path,
-        inbox=inbox,
-        category=category,
-        confidence=confidence,
+    bl, failure = _extract_document(
+        email_id=email_id, stage="bl_extraction", label="BL",
+        path=bl_candidates[0], inbox=inbox, base=base,
     )
     if failure is not None:
         return failure
@@ -178,18 +182,15 @@ def process_email(email: dict, inbox) -> ComparisonResult:
             needs_review=True,
             review_reason=ReviewReason.MISSING_VALUE,
             failure_stage="field_validation",
+            field_issues=issues,
+            extracted=extracted,
         )
 
     try:
-        mismatches = compare_fields(si_fields, bl_fields)
+        mismatches = compare_fields(si.fields, bl.fields)
     except Exception as exc:
         _log_stage_failure(email_id, "comparison", exc, "processing_error")
-        return _processing_error(
-            email_id,
-            "comparison",
-            category=category,
-            confidence=confidence,
-        )
+        return _processing_error(email_id, "comparison", **_without_id(base))
     return ComparisonResult(
         **base,
         mismatch_found=bool(mismatches),
@@ -204,14 +205,18 @@ SUBMISSION_KEYS = ("category", "status", "review_reason", "defect_fields", "has_
 def _record(result) -> dict:
     """Flatten a result into one checkpoint line.
 
-    Carries `mismatches` (the per-field SI/BL values) and `field_issues` (why a
-    field went to review, with its evidence) alongside the submission fields,
-    since to_submission() drops them and the review UI needs them.
+    Carries what to_submission() drops but the review UI and later runs need:
+    `mismatches` (the per-field SI/BL values), `field_issues` (why a field went to
+    review, with its evidence), the email `summary`, every `extracted` value, and
+    `failure_stage` (which stage failed).
     """
     return {
         "email_id": result.email_id,
         "confidence": result.confidence,
         "mismatches": result.mismatches,
+        "field_issues": [issue.model_dump(mode="json") for issue in result.field_issues],
+        "summary": result.summary,
+        "extracted": {k: v.model_dump(mode="json") for k, v in result.extracted.items()},
         "failure_stage": result.failure_stage,
         **result.to_submission(),
     }
@@ -242,9 +247,9 @@ def run_pipeline(
     if limit is not None:
         emails = emails[:limit]
 
-    done, failed = _load_checkpoint(checkpoint_path) if resume else ({}, {})
-    if checkpoint_path is not None and not resume:
-        checkpoint_path.write_text("")
+    done, failed = checkpoint.load() if checkpoint is not None and resume else ({}, {})
+    if checkpoint is not None and not resume:
+        checkpoint.reset()
 
     email_items = []
     for index, email in enumerate(emails):
@@ -313,12 +318,11 @@ def run_pipeline(
                         "processing_error",
                     )
                     record = _record(_processing_error(email_id, "email_validation"))
-                if _failed(record):
-                    record = _better_failure(failed.get(email_id), record)
+                if is_failed(record):
+                    record = better_failure(failed.get(email_id), record)
                 done[email_id] = record
-                if checkpoint_path is not None:
-                    with checkpoint_path.open("a") as fh:
-                        fh.write(json.dumps(record) + "\n")
+                if checkpoint is not None:
+                    checkpoint.append(record)
 
     submission = {}
     classify_records = {}

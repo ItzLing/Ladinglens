@@ -443,6 +443,63 @@ class RunIntegrationTests(unittest.TestCase):
         self.assertEqual(set(result.to_submission()), set(run.SUBMISSION_KEYS))
 
 
+class RealLadderThroughRunTests(unittest.TestCase):
+    """process_email with the real extraction ladder, mocking only the model.
+
+    The other run tests patch run.extract_document, so they cannot notice if run.py
+    and the ladder stop fitting together. These do not patch it.
+    """
+
+    class Inbox:
+        def read_bytes(self, path):
+            return b"Shipper: ACME LTD\nGross Weight: 131,058 KG\n"
+
+    def fields(self, **overrides):
+        base = dict(shipper="ACME LTD", consignee="BOB LLC", notify_party="BOB LLC",
+                    port_of_loading="SINGAPORE", port_of_discharge="KARACHI",
+                    container_count="6 x 40'HC", gross_weight_kg="131,058 KG")
+        return ShipmentFields(**{**base, **overrides})
+
+    def process(self, extract_reply):
+        from app.pipeline import extract, run
+
+        email = {"email_id": "e1", "attachments": ["a/e1_SI.txt", "a/e1_BL.txt"]}
+        with mock.patch.object(run, "classify_email",
+                               return_value=(EmailCategory.BL_COMPARISON, 0.9, "A check.")), \
+                mock.patch.object(extract, "extract_fields", **extract_reply):
+            return run.process_email(email, self.Inbox())
+
+    def test_a_clean_pair_is_compared_and_every_value_is_kept(self):
+        result = self.process({"side_effect": [self.fields(), self.fields(gross_weight_kg="131,059 KG")]})
+        self.assertFalse(result.needs_review, result.review_reason)
+        self.assertEqual(list(result.mismatches), ["gross_weight_kg"])
+        self.assertEqual(result.summary, "A check.")
+        self.assertEqual(result.extracted["SI"].fields["shipper"], "ACME LTD")
+        self.assertEqual(result.extracted["BL"].fields["gross_weight_kg"], "131,059 KG")
+        self.assertIsNone(result.failure_stage)
+
+    def test_an_unsettled_field_is_reported_with_the_stage_that_found_it(self):
+        result = self.process({"side_effect": [self.fields(gross_weight_kg="____MT"), self.fields()]})
+        self.assertEqual(result.review_reason, ReviewReason.MISSING_VALUE)
+        self.assertEqual(result.failure_stage, "field_validation")
+        self.assertEqual([i.field for i in result.field_issues], ["gross_weight_kg"])
+        self.assertEqual(result.extracted["SI"].fields["shipper"], "ACME LTD")
+
+    def test_a_model_outage_inside_the_ladder_is_a_processing_error_at_that_stage(self):
+        from app.llm_client import LLMUnavailableError
+
+        result = self.process({"side_effect": LLMUnavailableError("429")})
+        self.assertEqual(result.review_reason, ReviewReason.PROCESSING_ERROR)
+        self.assertEqual(result.failure_stage, "si_extraction")
+        self.assertEqual(result.category, EmailCategory.BL_COMPARISON)
+        self.assertEqual(result.summary, "A check.")  # what was known is kept
+
+    def test_a_bad_reply_from_the_model_is_unreadable_at_the_si_stage(self):
+        result = self.process({"side_effect": ValueError("not json")})
+        self.assertEqual(result.review_reason, ReviewReason.UNREADABLE)
+        self.assertEqual(result.failure_stage, "si_extraction")
+
+
 class ClassifySummaryTests(unittest.TestCase):
     def classify(self, reply):
         from app.pipeline import classify
