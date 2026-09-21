@@ -190,10 +190,14 @@ app/
   main.py                # FastAPI app, POST /run
   pipeline/
     classify.py          # stage 1: email -> category (+ confidence)
-    read_document.py      # attachment (txt/pdf/docx/xlsx/scan) -> text
-    extract.py            # stage 2: SI/BL text -> ShipmentFields
+    read_document.py      # attachment (txt/pdf/docx/xlsx/image) -> text, or page images
+    ocr.py                 # Tesseract OCR, per-word confidence, keyword label lookup
+    validate.py            # format / range / placeholder checks on extracted values
+    extract.py            # stage 2: the fallback ladder -> ShipmentFields + field issues
     compare.py             # stage 3: SI vs BL -> mismatches (deterministic, no LLM)
     run.py                  # orchestrator, checkpointing, decides needs_review
+tests/
+  test_extract_ladder.py  # the ladder, offline (OCR and LLM mocked)
 web/
   build_report.py       # joins results.jsonl + inbox -> report.json
   index.html             # static review dashboard (no build step)
@@ -205,31 +209,67 @@ data/
 
 ## Reading attachments
 
-Every SI/BL attachment goes through [`app/pipeline/read_document.py`](app/pipeline/read_document.py),
-which turns it into plain text before extraction:
+Each SI/BL attachment goes through a fallback ladder in
+[`app/pipeline/extract.py`](app/pipeline/extract.py). The cheapest, most trustworthy step
+runs first, and the API is only used where it has to be:
 
-| Format | How it is read |
-|---|---|
-| `.txt` | as is |
-| `.docx` | paragraphs and tables, parsed locally (`python-docx`) |
-| `.xlsx` | every non-empty row of every sheet, parsed locally (`openpyxl`) |
-| `.pdf` with text | its text layer (`pypdf`) -- no API call |
-| `.pdf`, scanned | the page image is sent to a vision model, which transcribes it (OCR) |
+1. **Read the text** ([`read_document.py`](app/pipeline/read_document.py)): `.txt`, `.docx`
+   and `.xlsx` are parsed locally, and a `.pdf` uses its text layer. That text goes to the
+   LLM, which maps it onto the 7 fields.
+2. **No usable text** (a scanned PDF, or a `.jpg`/`.png`/`.tif` file): OCR with
+   [Tesseract](https://github.com/tesseract-ocr/tesseract), which gives a confidence for every
+   word. A field's confidence is the **minimum** over its words, so one misread character
+   drags the whole field down.
+3. **Found by keyword and confident:** accepted, with no LLM call.
+4. **Low OCR confidence:** the characters were misread, so re-parsing that text cannot fix
+   it. The field goes straight to a **vision LLM** looking at the page image. Only the fields
+   that need it are sent, in one call per document.
+5. **Confident, but the label is not one we know:** the text is fine and only the wording is
+   new, so an LLM parses the clean OCR text.
+6. **Validation** on every value from OCR or an LLM (`validate.py`): weight must be a number
+   in kilograms within range, container count a whole number in range, names and ports
+   real text without stray symbols or placeholders such as `TBA` and `N/A`. For a text
+   document the raw line is checked too, so an LLM that tidies `____MT` into `MT` is still
+   caught. A value that fails is treated like low confidence.
+7. **Still unresolved:** the email is `needs_review` (`missing_value`) and each field is
+   recorded as a `field_issues` entry with its reason and evidence, in `results.jsonl` and
+   `web/report.json`. Nothing is guessed or dropped. `output.json` keeps the hackathon shape.
 
-Only scanned PDFs cost an API call, and each transcription is cached in `ocr_cache/`
-(gitignored), so a rerun does not read the same scan twice. The cache key includes the
-model and prompt, so changing either re-reads.
+A file that cannot be read at all -- corrupt, empty, or an unsupported type -- is
+`needs_review` (`unreadable`). If an API call fails, the email is `processing_error`
+instead, since that says nothing about the document.
 
-A file that cannot be read -- corrupt, empty, or an unsupported type -- is escalated as
-`needs_review` (`unreadable`) rather than guessed at. If the vision API itself fails, the
-email is `processing_error` instead, since that says nothing about the document.
+### Installing Tesseract
 
-Scanned PDFs need a **vision-capable model**. Gemini is; a local `llama3.1` is not. Set
-`LLM_VISION_MODEL` in `.env` to use a different model for scans than for text.
+`pytesseract` is only the Python wrapper. It needs the Tesseract program itself:
+
+```powershell
+winget install --id UB-Mannheim.TesseractOCR
+```
+
+The default Windows install folder is found automatically; otherwise set `TESSERACT_CMD`
+in `.env`. **Without Tesseract nothing breaks:** scans skip steps 2-3 and 5, and every
+field goes to the vision LLM. It works, but costs one vision call per scanned document
+where Tesseract would usually cost none.
+
+Scans and vision need a **vision-capable model**. Gemini is; a local `llama3.1` is not. Set
+`LLM_VISION_MODEL` in `.env` to use a different model for the vision step than for text.
+`OCR_MIN_CONFIDENCE` (default 80) is the confidence below which a field goes to vision.
+
+### Tests
+
+The ladder is tested with OCR and both LLM calls mocked, so no API quota or Tesseract is
+needed:
+
+```bash
+python -m unittest discover -s tests
+```
 
 ## Current scope
 
 - `Dockerfile` is not built yet.
-- Scans are transcribed by a language model, so a misread character can produce a false
-  mismatch. Anything the model cannot read is written as `[illegible]` in the transcript.
+- The OCR confidence threshold (`OCR_MIN_CONFIDENCE`) has not been calibrated against real
+  Tesseract output yet -- Tesseract was not installed when the ladder was built.
+- The dashboard (`web/index.html`) does not display `field_issues` yet; they are in
+  `report.json`.
 - See [`HANDOFF.md`](HANDOFF.md) for the running log of decisions and open questions.
