@@ -15,7 +15,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "data"))
 
+from dotenv import load_dotenv  # noqa: E402
+
+# The OCR cache is keyed on the vision model name, which comes from .env -- without
+# it this script would look for the wrong cache entries and find no scans.
+load_dotenv(ROOT / ".env")
+
 from loader import Inbox  # noqa: E402
+
+sys.path.insert(0, str(ROOT))
+from app.pipeline.read_document import read_document  # noqa: E402
 
 CHECKPOINT = ROOT / "results.jsonl"
 OUT = ROOT / "web" / "report.json"
@@ -76,10 +85,13 @@ def main() -> None:
                 match = next(
                     (a for a in email.get("attachments", []) if f"_{role}" in a), None
                 )
-                if match and match.lower().endswith(".txt"):
+                if match:
                     try:
-                        entry[f"{role.lower()}_text"] = inbox.read_text(match)[:MAX_DOC_CHARS]
-                    except OSError:
+                        # ocr=False: building the report never spends API calls.
+                        # Scans show up only if the run already transcribed them.
+                        text = read_document(inbox, match, ocr=False)
+                        entry[f"{role.lower()}_text"] = text[:MAX_DOC_CHARS]
+                    except (ValueError, OSError):
                         pass
         emails.append(entry)
 

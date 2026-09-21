@@ -11,15 +11,10 @@ from app.llm_client import LLMUnavailableError
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
 from app.pipeline.extract import extract_fields
+from app.pipeline.read_document import read_document
 from app.schema import ComparisonResult, EmailCategory, ReviewReason
 
 CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.2
-
-
-def _is_text_attachment(path: str) -> bool:
-    # PDF/DOCX/XLSX extraction is deferred (see HANDOFF.md) -- route those
-    # to needs_review(unreadable) instead of guessing at their content.
-    return path.lower().endswith(".txt")
 
 
 def process_email(email: dict, inbox) -> ComparisonResult:
@@ -71,18 +66,9 @@ def process_email(email: dict, inbox) -> ComparisonResult:
 
     si_path, bl_path = si_candidates[0], bl_candidates[0]
 
-    if not (_is_text_attachment(si_path) and _is_text_attachment(bl_path)):
-        return ComparisonResult(
-            email_id=email_id,
-            category=category,
-            confidence=confidence,
-            needs_review=True,
-            review_reason=ReviewReason.UNREADABLE,
-        )
-
     try:
-        si_fields = extract_fields(inbox.read_text(si_path))
-        bl_fields = extract_fields(inbox.read_text(bl_path))
+        si_fields = extract_fields(read_document(inbox, si_path))
+        bl_fields = extract_fields(read_document(inbox, bl_path))
     except LLMUnavailableError:
         # An API failure says nothing about the document -- keep it out of the
         # unreadable bucket so rate limits don't masquerade as real verdicts.

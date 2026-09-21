@@ -4,6 +4,7 @@ Ollama, Groq, Cerebras, OpenRouter and Gemini all speak the OpenAI chat
 completions API, so the provider is a base URL plus a model name in .env rather
 than a code change. See .env.example for ready-made settings for each.
 """
+import base64
 import json
 import os
 import random
@@ -58,8 +59,9 @@ def _was_truncated(response) -> bool:
     return bool(choices) and getattr(choices[0], "finish_reason", None) == "length"
 
 
-def _generate(model: str, system: str, user: str, max_tokens: int):
+def _generate(model: str, messages: list, max_tokens: int, json_mode: bool):
     """Call the model, retrying transient failures with exponential backoff."""
+    extra = {"response_format": {"type": "json_object"}} if json_mode else {}
     for attempt in range(MAX_ATTEMPTS):
         try:
             return _get_client().chat.completions.create(
@@ -71,11 +73,8 @@ def _generate(model: str, system: str, user: str, max_tokens: int):
                 # happen to disagree, compare.py reports a discrepancy that
                 # isn't in the documents.
                 temperature=0,
-                response_format={"type": "json_object"},
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
+                messages=messages,
+                **extra,
             )
         except (RateLimitError, APIConnectionError, APIStatusError) as exc:
             if not _is_retryable(exc) or attempt == MAX_ATTEMPTS - 1:
@@ -83,6 +82,28 @@ def _generate(model: str, system: str, user: str, max_tokens: int):
                     f"LLM call failed after {attempt + 1} attempt(s): {exc}"
                 ) from exc
             time.sleep(2 ** (attempt + 1) + random.uniform(0, 1))
+
+
+def _default_max_tokens() -> int:
+    # Reasoning models spend thinking tokens out of this same budget, so it
+    # needs headroom well above the size of the reply itself.
+    return int(os.environ.get("LLM_MAX_TOKENS", "4096"))
+
+
+def _complete(model: str, messages: list, max_tokens: int, json_mode: bool) -> str:
+    """Run one call and return the reply text, raising on failure or truncation."""
+    response = _generate(model, messages, max_tokens, json_mode)
+
+    # A truncated reply is a budget problem, not a malformed one: surfacing it as
+    # a JSON parse error would let the pipeline book it against the document.
+    if _was_truncated(response):
+        raise LLMUnavailableError(
+            f"reply hit the {max_tokens}-token output budget before completing "
+            "(raise LLM_MAX_TOKENS)"
+        )
+
+    choices = getattr(response, "choices", None) or []
+    return (choices[0].message.content or "") if choices else ""
 
 
 def call_json(system: str, user: str, max_tokens: Optional[int] = None) -> dict[str, Any]:
@@ -94,24 +115,52 @@ def call_json(system: str, user: str, max_tokens: Optional[int] = None) -> dict[
     cut off, ValueError if it replied with something that isn't JSON.
     """
     model = os.environ.get("LLM_MODEL", "llama3.1:8b")
-    if max_tokens is None:
-        # Reasoning models spend thinking tokens out of this same budget, so it
-        # needs headroom well above the size of the JSON itself.
-        max_tokens = int(os.environ.get("LLM_MAX_TOKENS", "4096"))
-
-    response = _generate(model, system, user, max_tokens)
-
-    # A truncated reply is a budget problem, not a malformed one: surfacing it as
-    # a JSON parse error would let the pipeline book it against the document.
-    if _was_truncated(response):
-        raise LLMUnavailableError(
-            f"reply hit the {max_tokens}-token output budget before completing "
-            "(raise LLM_MAX_TOKENS)"
-        )
-
-    choices = getattr(response, "choices", None) or []
-    text = (choices[0].message.content or "") if choices else ""
+    text = _complete(
+        model,
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens or _default_max_tokens(),
+        json_mode=True,
+    )
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:
         raise ValueError(f"model did not return valid JSON: {text!r}") from exc
+
+
+def vision_model_name() -> str:
+    return os.environ.get("LLM_VISION_MODEL") or os.environ.get("LLM_MODEL", "llama3.1:8b")
+
+
+def call_vision_text(
+    system: str,
+    user: str,
+    images: list[tuple[bytes, str]],
+    max_tokens: Optional[int] = None,
+) -> str:
+    """Send images (bytes, mime type) with a prompt and return the plain-text reply.
+
+    Uses LLM_VISION_MODEL if set, since the text model may not accept images
+    (a local llama3.1 doesn't); otherwise falls back to LLM_MODEL.
+
+    Raises LLMUnavailableError if the API could not be reached, rejected the
+    images, or the reply was cut off.
+    """
+    model = vision_model_name()
+    content: list[dict[str, Any]] = [{"type": "text", "text": user}]
+    for data, mime in images:
+        encoded = base64.b64encode(data).decode("ascii")
+        content.append(
+            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
+        )
+    return _complete(
+        model,
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": content},
+        ],
+        max_tokens or _default_max_tokens(),
+        json_mode=False,
+    )
