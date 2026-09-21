@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from app.paths import results_file  # noqa: E402
 from app.pipeline.compare import _PARTY_FIELDS, _normalize, _same_party  # noqa: E402
 
 SUBMISSION_KEYS = ("category", "status", "review_reason", "defect_fields", "has_defect")
@@ -39,7 +40,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    checkpoint = ROOT / "results.jsonl"
+    checkpoint = results_file("results.jsonl")
     records = [json.loads(l) for l in checkpoint.read_text().splitlines() if l.strip()]
 
     changed = 0
@@ -68,10 +69,10 @@ def main() -> int:
         r["email_id"]: {"confidence": r.get("confidence"), **{k: r[k] for k in SUBMISSION_KEYS}}
         for r in records
     }
-    (ROOT / "output.json").write_text(json.dumps(submission, indent=2))
-    (ROOT / "classify_cache.json").write_text(json.dumps(cache, indent=2))
+    results_file("output.json").write_text(json.dumps(submission, indent=2))
+    results_file("classify_cache.json").write_text(json.dumps(cache, indent=2))
     checkpoint.write_text("".join(json.dumps(r) + "\n" for r in records))
-    print("rewrote output.json, classify_cache.json, results.jsonl")
+    print(f"rewrote output.json, classify_cache.json, results.jsonl in {results_file('').parent.name}/")
     return 0
 
 
