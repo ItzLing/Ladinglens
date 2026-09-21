@@ -153,6 +153,7 @@ app/
   main.py                # FastAPI app, POST /run
   pipeline/
     classify.py          # stage 1: email -> category (+ confidence)
+    read_document.py      # attachment (txt/pdf/docx/xlsx/scan) -> text
     extract.py            # stage 2: SI/BL text -> ShipmentFields
     compare.py             # stage 3: SI vs BL -> mismatches (deterministic, no LLM)
     run.py                  # orchestrator, checkpointing, decides needs_review
@@ -165,11 +166,33 @@ data/
   server/                 # dataset server + score_cli.py
 ```
 
+## Reading attachments
+
+Every SI/BL attachment goes through [`app/pipeline/read_document.py`](app/pipeline/read_document.py),
+which turns it into plain text before extraction:
+
+| Format | How it is read |
+|---|---|
+| `.txt` | as is |
+| `.docx` | paragraphs and tables, parsed locally (`python-docx`) |
+| `.xlsx` | every non-empty row of every sheet, parsed locally (`openpyxl`) |
+| `.pdf` with text | its text layer (`pypdf`) -- no API call |
+| `.pdf`, scanned | the page image is sent to a vision model, which transcribes it (OCR) |
+
+Only scanned PDFs cost an API call, and each transcription is cached in `ocr_cache/`
+(gitignored), so a rerun does not read the same scan twice. The cache key includes the
+model and prompt, so changing either re-reads.
+
+A file that cannot be read -- corrupt, empty, or an unsupported type -- is escalated as
+`needs_review` (`unreadable`) rather than guessed at. If the vision API itself fails, the
+email is `processing_error` instead, since that says nothing about the document.
+
+Scanned PDFs need a **vision-capable model**. Gemini is; a local `llama3.1` is not. Set
+`LLM_VISION_MODEL` in `.env` to use a different model for scans than for text.
+
 ## Current scope
 
-- Attachment extraction handles `.txt` SI/BL documents only. `.pdf`, `.docx` and
-  `.xlsx` are routed to `needs_review` (`unreadable`) rather than guessed at -- see
-  `app/pipeline/run.py`. That covers 58 of 250 attachments, and is the largest single
-  block of unclaimed score.
 - `Dockerfile` is not built yet.
+- Scans are transcribed by a language model, so a misread character can produce a false
+  mismatch. Anything the model cannot read is written as `[illegible]` in the transcript.
 - See [`HANDOFF.md`](HANDOFF.md) for the running log of decisions and open questions.

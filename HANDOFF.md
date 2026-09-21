@@ -504,3 +504,85 @@ emails caught.
   are scratch run data -- `git rm --cached` when convenient.
 
 **Synced through:** `938aa57`
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (PDF / Word / Excel parsing + OCR)
+
+**What changed:**
+- New `app/pipeline/read_document.py`: turns any attachment into plain text before
+  `extract_fields()` sees it. `.txt` as is; `.docx` (paragraphs + tables) and `.xlsx` (every
+  non-empty row) parsed locally; `.pdf` via its text layer; a PDF with **no** text layer is a
+  scan, so its page image is sent to a vision model to transcribe (OCR).
+- `run.py`: removed the ".txt only" gate that sent every other format to
+  `needs_review(unreadable)`; attachments now go through `read_document`. Corrupt / empty /
+  unsupported files raise `DocumentUnreadableError` (a `ValueError`) -> still `unreadable`; an
+  API failure during OCR raises `LLMUnavailableError` -> `processing_error`, as before.
+- `llm_client.py`: `_generate` now takes messages + an optional JSON mode; added
+  `call_vision_text()` (image + prompt -> plain text) and `vision_model_name()`. `call_json`
+  behaves exactly as before. New optional env var `LLM_VISION_MODEL` (defaults to `LLM_MODEL`).
+- `compare.py`: normalization now also ignores address separators (`,` `;` `|`), thousands
+  commas, and the `KG`/`KGS` unit on `gross_weight_kg`. See Decisions.
+- `web/build_report.py` reads documents via `read_document(..., ocr=False)` so the dashboard
+  can show PDF/Word/Excel text and cached scans; it now calls `load_dotenv` (see Decisions).
+  `web/index.html`: the "unreadable" banner no longer claims PDF/Word/Excel are unsupported.
+- `requirements.txt`: `pypdf`, `python-docx`, `openpyxl`, `pillow`. `.gitignore`: `ocr_cache/`.
+  `.env.example` + `README.md` document the new behavior.
+
+**Why:**
+- 58 of 250 attachments were non-txt and 54 of 150 comparison requests never reached
+  comparison (previous entry) -- the largest block of unclaimed score. The brief lists
+  "scanned documents" as a requirement and explicitly allows OCR, a vision LLM, or both.
+
+**What the data actually contains (checked, not assumed):**
+- 28 PDFs: 20 have a clean text layer (no OCR needed), **6 are image-only scans**
+  (`email_512`-`514`, SI + BL each, clean rendered text), **2 are truncated ~770-byte files**
+  (`email_511_BL`, `email_515_BL`; their emails say "the BL file will not open").
+- 8 docx (bilingual EN/CN labels in a table) and 22 xlsx (label | value rows, weight as a
+  bare number). All parse.
+
+**Decisions made:**
+- **Vision LLM for OCR, not Tesseract/EasyOCR.** No new system binary or heavy model wheel
+  (unclear support on Python 3.14), it reuses the existing provider, and the transcript then
+  goes through the same `extract_fields()` path as every other format. Cost: OCR needs a
+  vision-capable model -- Gemini is, a local `llama3.1` is not (hence `LLM_VISION_MODEL`).
+- **Transcribe to text, then extract** (two calls) rather than image -> fields (one call): the
+  transcript is inspectable and cached, and one extraction path is easier to reason about.
+- **OCR transcripts cached in `ocr_cache/`**, keyed on the file bytes + prompt + vision model,
+  so a rerun doesn't re-spend quota and a model/prompt change can't serve stale text.
+- **`compare.py` normalization widened -- this was a real bug, not polish.** Once xlsx and
+  docx were readable, `email_055` (xlsx SI vs docx BL) reported 4 mismatches that were all
+  formatting: `243588` vs `243,588`, and address parts joined by `;`/`|` in the xlsx but `,`
+  in the docx. It only removes formatting; words and digits are never altered, and real
+  differences (weight digit, name, port, container) are still caught. Also applies to `.txt`,
+  where it can only remove separator-only false positives.
+- Any exception from pypdf/python-docx/openpyxl on a damaged file is caught **at the parser
+  boundary only** and re-raised as `DocumentUnreadableError`; API errors are never swallowed.
+- Scan pages capped at `MAX_OCR_PAGES = 5`; SI/BL documents are one page.
+
+**Verification:**
+- All 250 attachments run through `read_document(ocr=False)`: 242 parse; 2 corrupt PDFs ->
+  `unreadable`; 6 scans wait for OCR. No API used.
+- Live OCR on all 6 scans (Gemini); `512_SI` checked field by field against the image.
+- Live end-to-end: `email_059` (text PDF) and `email_005` (xlsx vs xlsx) -> `OK`.
+- With the LLM stubbed: 511/515 -> `unreadable`; 512-514 -> read from cache with the API
+  pointed at a dead port (proves cache + no-API path); 055 -> `OK`.
+- **Not verified:** any score. `data/` here has no `ground_truth.json`, and free-tier quota
+  ran out mid-session, so there is no full run and no self-evaluation number for this change.
+
+**Open questions / next steps:**
+- **Quota:** the API returned `429 ... limit: 20, model: gemini-3.6-flash` (free tier, per day)
+  -- far below the 500/day noted in `.env.example`/`README.md`. Testing OCR alone used ~6.
+  A full run needs ~724 calls, so expect to need another model, a paid key, or Ollama.
+- **Run the full pipeline and score it** when quota allows -- this change should move the 54
+  stuck comparison requests, but that is unmeasured. Use `?resume=true` only if the model
+  is unchanged (see previous entries).
+- **OCR misreads can create false mismatches.** The prompt asks for `[illegible]` where the
+  model can't read text, but nothing yet turns an `[illegible]` value into
+  `needs_review(missing_value)`. Worth doing if scans get messier than the clean ones here.
+- `web/build_report.py` still hard-codes `INBOX_SOURCE = "data/data_v2"`; this checkout only
+  has `data/inbox` + `data/attachments`, so it can't be run here as-is.
+- `HANDOFF.md` is ~11 entries; archive the old ones into `HANDOFF-archive.md` as its own commit.
+
+**Synced through:** `aa38e80` (committed as `8983325`, `6d20a09`, `ed6c5ce`, `aa38e80`, one per task)
