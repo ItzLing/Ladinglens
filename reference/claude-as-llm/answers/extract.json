@@ -1,0 +1,251 @@
+{
+ "email_059/SI": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "BALL & DOGGETT AUSTRALIA PTY LTD",
+  "notify_party": "PACIFIC OFFICE (M) SDN BHD",
+  "port_of_loading": "BUATAN, INDONESIA",
+  "port_of_discharge": "FREMANTLE, AUSTRALIA"
+ },
+ "email_059/BL": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "BALL & DOGGETT AUSTRALIA PTY LTD",
+  "notify_party": "PACIFIC OFFICE (M) SDN BHD",
+  "port_of_loading": "BUATAN, INDONESIA",
+  "port_of_discharge": "FREMANTLE, AUSTRALIA"
+ },
+ "email_160/SI": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "KTP CO., LTD",
+  "notify_party": "KTP CO., LTD",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "APAPA, NIGERIA"
+ },
+ "email_160/BL": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "KTP CO., LTD",
+  "notify_party": "KTP CO., LTD",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "APAPA, NIGERIA"
+ },
+ "email_208/SI": {
+  "shipper": "APRIL FAR EAST (M) SDN BHD",
+  "consignee": "CERIEX",
+  "notify_party": "CERIEX",
+  "port_of_loading": "RUGAO/NANTONG/SHANGHAI, CHINA",
+  "port_of_discharge": "FREMANTLE, AUSTRALIA"
+ },
+ "email_208/BL": {
+  "shipper": "APRIL FAR EAST (M) SDN BHD",
+  "consignee": "CERIEX",
+  "notify_party": "CERIEX",
+  "port_of_loading": "RUGAO/NANTONG/SHANGHAI, CHINA",
+  "port_of_discharge": "FREMANTLE, AUSTRALIA"
+ },
+ "email_273/SI": {
+  "shipper": "ASIA PACIFIC PAPERBOARD TRADING PTE LTD",
+  "consignee": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "notify_party": "INTERNATIONAL FOREST PRODUCTS LLC",
+  "port_of_loading": "RUGAO/NANTONG/SHANGHAI, CHINA",
+  "port_of_discharge": "CONAKRY, GUINEA"
+ },
+ "email_273/BL": {
+  "shipper": "ASIA PACIFIC PAPERBOARD TRADING PTE LTD",
+  "consignee": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "notify_party": "INTERNATIONAL FOREST PRODUCTS LLC",
+  "port_of_loading": "RUGAO/NANTONG/SHANGHAI, CHINA",
+  "port_of_discharge": "CONAKRY, GUINEA"
+ },
+ "email_313/SI": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "notify_party": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "port_of_loading": "RUGAO/NANTONG/SHANGHAI, CHINA",
+  "port_of_discharge": "HOCHIMINH CITY, VIETNAM"
+ },
+ "email_313/BL": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "notify_party": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "port_of_loading": "RUGAO/NANTONG/SHANGHAI, CHINA",
+  "port_of_discharge": "HOCHIMINH CITY, VIETNAM"
+ },
+ "email_351/SI": {
+  "shipper": "APRIL FINE PAPER TRADING (MIDDLE EAST) FZE",
+  "consignee": "KTP CO., LTD",
+  "notify_party": "KTP CO., LTD",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "ASHDOD, ISRAEL"
+ },
+ "email_351/BL": {
+  "shipper": "APRIL FINE PAPER TRADING (MIDDLE EAST) FZE",
+  "consignee": "KTP CO., LTD",
+  "notify_party": "KTP CO., LTD",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "ASHDOD, ISRAEL"
+ },
+ "email_407/SI": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "NAGAPPA EXPORTS",
+  "notify_party": "NAGAPPA EXPORTS",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "YANGON, MYANMAR"
+ },
+ "email_407/BL": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "NAGAPPA EXPORTS",
+  "notify_party": "NAGAPPA EXPORTS",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "YANGON, MYANMAR"
+ },
+ "email_411/SI": {
+  "shipper": "APRIL FAR EAST (M) SDN BHD",
+  "consignee": "VITAL SOLUTIONS PTE. LTD.",
+  "notify_party": "VITAL SOLUTIONS PTE. LTD.",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "NEW YORK, US"
+ },
+ "email_411/BL": {
+  "shipper": "APRIL FAR EAST (M) SDN BHD",
+  "consignee": "VITAL SOLUTIONS PTE. LTD.",
+  "notify_party": "VITAL SOLUTIONS PTE. LTD.",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "NEW YORK, US"
+ },
+ "email_434/SI": {
+  "shipper": "APRIL FINE PAPER TRADING (MIDDLE EAST) FZE",
+  "consignee": "TOPKOPY MIDDLE EAST FZE",
+  "notify_party": "TOPKOPY MIDDLE EAST FZE",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "BUSAN, SOUTH KOREA"
+ },
+ "email_434/BL": {
+  "shipper": "APRIL FINE PAPER TRADING (MIDDLE EAST) FZE",
+  "consignee": "TOPKOPY MIDDLE EAST FZE",
+  "notify_party": "TOPKOPY MIDDLE EAST FZE",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "CEBU, PHILIPPINES"
+ },
+ "email_499/SI": {
+  "shipper": "APRIL FINE PAPER TRADING (MIDDLE EAST) FZE",
+  "consignee": "TOPKOPY MIDDLE EAST FZE",
+  "notify_party": "TOPKOPY MIDDLE EAST FZE",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "HOCHIMINH CITY, VIETNAM"
+ },
+ "email_499/BL": {
+  "shipper": "APRIL FINE PAPER TRADING (MIDDLE EAST) FZE",
+  "consignee": "TOPKOPY MIDDLE EAST FZE",
+  "notify_party": "TOPKOPY MIDDLE EAST FZE",
+  "port_of_loading": "PORT KLANG (WESTPORT), MALAYSIA",
+  "port_of_discharge": "HOCHIMINH CITY, VIETNAM"
+ },
+ "email_501/BL": {
+  "shipper": null,
+  "consignee": null,
+  "notify_party": null,
+  "port_of_loading": null,
+  "port_of_discharge": null,
+  "container_count": null,
+  "gross_weight_kg": null
+ },
+ "email_502/BL": {
+  "notify_party": null,
+  "port_of_loading": null,
+  "port_of_discharge": null,
+  "container_count": null,
+  "gross_weight_kg": null
+ },
+ "email_503/BL": {
+  "notify_party": null,
+  "port_of_loading": null,
+  "port_of_discharge": null,
+  "container_count": null,
+  "gross_weight_kg": null
+ },
+ "email_504/BL": {
+  "notify_party": null,
+  "port_of_loading": null,
+  "port_of_discharge": null,
+  "container_count": null,
+  "gross_weight_kg": null
+ },
+ "email_505/BL": {
+  "notify_party": null,
+  "port_of_loading": null,
+  "port_of_discharge": null,
+  "container_count": null,
+  "gross_weight_kg": null
+ },
+ "email_516/SI": {
+  "gross_weight_kg": null
+ },
+ "email_517/SI": {
+  "port_of_loading": null,
+  "port_of_discharge": null
+ },
+ "email_518/SI": {
+  "port_of_discharge": null,
+  "gross_weight_kg": null
+ },
+ "email_519/SI": {
+  "shipper": null,
+  "container_count": null
+ },
+ "email_520/SI": {
+  "consignee": null
+ },
+ "email_512/SI": {
+  "shipper": "APRIL FAR EAST (M) SDN BHD",
+  "consignee": "AL GURG STATIONERY LLC",
+  "notify_party": "AL GURG STATIONERY LLC",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "TUTICORIN, INDIA",
+  "container_count": "6 x 40'HC",
+  "gross_weight_kg": "128,544 KG"
+ },
+ "email_512/BL": {
+  "shipper": "APRIL FAR EAST (M) SDN BHD",
+  "consignee": "AL GURG STATIONERY LLC",
+  "notify_party": "AL GURG STATIONERY LLC",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "TUTICORIN, INDIA",
+  "container_count": "6 x 40'HC",
+  "gross_weight_kg": "128,544 KG"
+ },
+ "email_513/SI": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "notify_party": "EAST BRIGHT FZ-LLC",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "VALPARAISO, CHILE",
+  "container_count": "10 x 40'HC",
+  "gross_weight_kg": "237,750 KG"
+ },
+ "email_513/BL": {
+  "shipper": "APRIL FINE PAPER TRADING",
+  "consignee": "KPP-ANTALIS (SINGAPORE) PTE. LTD.",
+  "notify_party": "EAST BRIGHT FZ-LLC",
+  "port_of_loading": "NHAVA SHEVA, INDIA",
+  "port_of_discharge": "VALPARAISO, CHILE",
+  "container_count": "10 x 40'HC",
+  "gross_weight_kg": "237,750 KG"
+ },
+ "email_514/SI": {
+  "shipper": "ASIA PACIFIC PAPERBOARD TRADING PTE LTD",
+  "consignee": "EAST BRIGHT FZ-LLC",
+  "notify_party": "EAST BRIGHT FZ-LLC",
+  "port_of_loading": "NANTONG, CHINA",
+  "port_of_discharge": "GDANSK, POLAND",
+  "container_count": "1 x 20'FCL",
+  "gross_weight_kg": "22,825 KG"
+ },
+ "email_514/BL": {
+  "shipper": "ASIA PACIFIC PAPERBOARD TRADING PTE LTD",
+  "consignee": "EAST BRIGHT FZ-LLC",
+  "notify_party": "EAST BRIGHT FZ-LLC",
+  "port_of_loading": "NANTONG, CHINA",
+  "port_of_discharge": "GDANSK, POLAND",
+  "container_count": "1 x 20'FCL",
+  "gross_weight_kg": "22,825 KG"
+ }
+}

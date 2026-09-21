@@ -320,6 +320,8 @@ scripts/
   recompare.py           # re-applies stage 3 offline, without spending API quota
   export_excel.py        # a finished run -> .xlsx for the operations team
   feed_inbox.py          # drips emails into data/live/ to simulate arrivals
+reference/
+  claude-as-llm/         # a worked example: the whole pipeline run with Claude as the model, no API
 results/                 # everything a run writes (only its README is tracked)
 tests/
   test_*.py               # Python tests, offline (OCR, LLM and MongoDB mocked)
