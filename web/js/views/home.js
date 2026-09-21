@@ -1,6 +1,6 @@
 import { h, clear } from "../util/dom.js";
 import { CATEGORY_ORDER, categoryLabel, formatConfidence, formatTime } from "../util/format.js";
-import { PRIORITY_LABEL, nextStep, priorityOf, sortByPriority } from "../store.js";
+import { PRIORITY_LABEL, needsPerson, nextStep, priorityOf, sortByPriority } from "../store.js";
 import { routeHash } from "../router.js";
 import { labelChip, statusChipEl } from "../components/chips.js";
 
@@ -82,7 +82,7 @@ function queueRows(rows) {
   }
   return h("tbody", {},
     rows.slice(0, 12).map((row) => {
-      const target = row.status === "NEEDS_REVIEW" ? "review" : "parsing";
+      const target = needsPerson(row) ? "review" : "parsing";
       return (
       h("tr", {},
         h("td", {}, h("span", { class: `priority ${priorityOf(row)}` }, PRIORITY_LABEL[priorityOf(row)])),

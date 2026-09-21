@@ -263,6 +263,12 @@ The rail shows it and it opens a "Design in progress" page. Nothing further is b
 owner's draft arrives. The earlier idea (a Review workspace with an evidence panel and form) is
 kept only as a suggestion for that draft.
 
+Parsing and Review share one scaffold, `components/casepane.js`: the two panes, opening an email,
+loading its case, `j` / `k`, the original email and documents, and the Retry button. Each view keeps
+only its own part (Parsing its filters and field table, Review its queue rules, corrections and
+delegation) and links to the other tab for the same email. What counts as "needs a person" is one
+rule, `needsPerson` in `store.js`, used by Review's queue, the Parsing link and the Home queue.
+
 **Delegation (demo).** Every case in the queue has a "Delegate this case" box: type a name,
 press **Send to {name}**, and the case moves to a **Delegated** tab with a "Delegated to {name}"
 chip. **Take back** returns it. Nothing is sent anywhere; the hand-over is kept in the browser
@@ -371,7 +377,7 @@ web/
   js/views/data.js      tab 5
   js/views/report.js    the Report tab: numbers, chart, emails folded by label
   js/views/soon.js      "Design in progress" for Review
-  js/components/        rail.js, runbar.js, fields.js, chips.js
+  js/components/        rail.js, runbar.js, fields.js, chips.js, casepane.js
   js/util/              diff.js (word diff), format.js, dom.js
   report.json           static demo data (kept, tracked)
   DESIGN.md             this file

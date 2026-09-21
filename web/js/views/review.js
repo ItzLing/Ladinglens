@@ -1,20 +1,14 @@
 import { add, h, clear, announce } from "../util/dom.js";
 import { icon } from "../util/icons.js";
 import { FIELDS, REASON, categoryLabel, formatConfidence } from "../util/format.js";
-import { caseBanner, delegate, fieldRows, isFailed, sortRows, takeBack } from "../store.js";
-import { routeHash } from "../router.js";
+import { caseBanner, delegate, fieldRows, isFailed, needsPerson, sortRows, takeBack } from "../store.js";
 import { labelChip, statusChipEl } from "../components/chips.js";
-import { documentsView } from "../components/fields.js";
+import { emailAndDocuments, mountCasePane, otherTabLink, retryButton, rowButton } from "../components/casepane.js";
 
 const STORAGE_KEY = "ladinglens-review-corrections-v1";
 const DELEGATION_KEY = "ladinglens-review-delegations-v1";
 const REVIEW_FIELDS = [...FIELDS, ["amount_money", "Amount / money"]];
 const URGENT_REASONS = new Set(["processing_error", "missing_attachment", "unreadable"]);
-
-const excerpt = (text, limit = 150) => {
-  const clean = String(text ?? "").replace(/\s+/g, " ").trim();
-  return clean.length > limit ? `${clean.slice(0, limit)}...` : clean;
-};
 
 function readSaved() {
   try {
@@ -56,10 +50,6 @@ function reviewReason(row) {
   return "Needs human check";
 }
 
-function isReviewCandidate(row) {
-  return row.status === "NEEDS_REVIEW" || row.review_reason === "processing_error";
-}
-
 function isUrgent(row) {
   return URGENT_REASONS.has(row.review_reason) || row.review_reason === "processing_error";
 }
@@ -97,8 +87,6 @@ function downloadJson(name, data) {
  */
 export function mountReview(root, ctx) {
   const { api } = ctx;
-  let selectedId = null;
-  let token = 0;
   let mode = "open";
   let q = "";
   let saved = readSaved();
@@ -109,18 +97,22 @@ export function mountReview(root, ctx) {
     class: "search", type: "search", placeholder: "Search review cases", "aria-label": "Search review cases",
     oninput: (e) => { q = e.target.value; renderList(); },
   });
-  const listEl = h("div", { class: "list-scroll", role: "listbox", "aria-label": "Review queue", tabindex: "0" });
-  const detailEl = h("section", { class: "pane-detail", "aria-label": "Human review detail" });
-  const panes = h(
-    "div",
-    { class: "panes review-panes" },
-    h("section", { class: "pane-list", "aria-label": "Review list" }, tabsEl, h("div", { class: "filters" }, search), listEl),
-    detailEl,
-  );
-  clear(root).append(panes);
+  const pane = mountCasePane(root, {
+    tab: "review",
+    ctx,
+    paneClass: "review-panes",
+    top: [tabsEl, h("div", { class: "filters" }, search)],
+    search,
+    labels: { list: "Review list", listbox: "Review queue", detail: "Human review detail", back: "Review queue", select: "Select a case to review and correct the fields.", missing: (id) => `There is no case for ${id}.` },
+    rows: () => activeRows(),
+    emptyDetail: () => emptyDetail(),
+    header: (row) => detailHeader(row),
+    sections: (row, kase) => detailSections(row, kase),
+  });
+  const listEl = pane.listEl;
 
   const rows = () => ctx.getReport()?.emails ?? [];
-  const reviewRows = () => sortRows(rows().filter((row) => isReviewCandidate(row) && !delegations[row.email_id]));
+  const reviewRows = () => sortRows(rows().filter((row) => needsPerson(row) && !delegations[row.email_id]));
   const delegatedRows = () => sortRows(rows().filter((row) => Boolean(delegations[row.email_id])));
   const savedRows = () => sortRows(rows().filter((row) => Boolean(saved[row.email_id])));
   const activeRows = () => {
@@ -156,7 +148,7 @@ export function mountReview(root, ctx) {
     }
     listEl.append(
       ...list.map((row) =>
-        h("button", { class: "row", role: "option", type: "button", id: `review-row-${row.email_id}`, "aria-selected": String(row.email_id === selectedId), onclick: () => { location.hash = routeHash("review", row.email_id); } },
+        rowButton("review", row, pane.selectedId(),
           h("div", { class: "id" }, row.email_id),
           h("div", { class: "subject" }, row.subject || "(no subject)"),
           h("div", { class: "meta" },
@@ -174,17 +166,6 @@ export function mountReview(root, ctx) {
   function renderList() {
     renderTabs();
     renderRows();
-  }
-
-  function markSelected() {
-    for (const el of listEl.querySelectorAll('[role="option"]')) el.setAttribute("aria-selected", String(el.id === `review-row-${selectedId}`));
-    document.getElementById(`review-row-${selectedId}`)?.scrollIntoView({ block: "nearest" });
-  }
-
-  const backButton = () => h("a", { class: "btn small back", href: routeHash("review") }, icon("back"), "Review queue");
-
-  function fold(title, content, open = false) {
-    return h("details", { class: "fold", open: open ? "" : null }, h("summary", {}, title), h("div", { class: "fold-body" }, content));
   }
 
   function buildForm(row, kase) {
@@ -246,7 +227,7 @@ export function mountReview(root, ctx) {
       }
       status.textContent = `Saved ${new Date(saved[row.email_id].updated_at).toLocaleString()}`;
       renderList();
-      markSelected();
+      pane.markSelected();
       announce("Correction saved.");
     }
 
@@ -257,7 +238,7 @@ export function mountReview(root, ctx) {
       writeSaved(saved);
       announce("Saved correction cleared.");
       renderList();
-      renderDetail();
+      pane.renderDetail();
     }
 
     function exportSaved() {
@@ -282,7 +263,7 @@ export function mountReview(root, ctx) {
             writeDelegations(delegations);
             announce(`Took ${row.email_id} back.`);
             renderList();
-            renderDetail();
+            pane.renderDetail();
           } }, "Take back")));
     } else {
       const name = h("input", { name: "person", class: "search", placeholder: "Name of the person to handle this", "aria-label": "Person to delegate this case to", autocomplete: "off", maxlength: "80" });
@@ -302,7 +283,7 @@ export function mountReview(root, ctx) {
           if (!writeDelegations(delegations)) announce("Could not save in this browser.");
           else announce(`Delegated ${row.email_id} to ${delegations[row.email_id].to}.`);
           renderList();
-          renderDetail();
+          pane.renderDetail();
         } }, name, send));
     }
     add(box, h("small", { class: "muted" }, "Demo only: nothing is emailed. The hand-over is kept in this browser."));
@@ -311,7 +292,6 @@ export function mountReview(root, ctx) {
 
   function detailHeader(row) {
     return [
-      backButton(),
       h("div", { class: "case-head" },
         h("span", { class: `chip ${isUrgent(row) ? "failed" : "review"}` }, icon(isUrgent(row) ? "alert" : "info"), isUrgent(row) ? "Urgent" : "Normal"),
         labelChip(row.category),
@@ -323,70 +303,35 @@ export function mountReview(root, ctx) {
 
   function detailSections(row, kase) {
     const banner = caseBanner(kase.record, row.category);
-    const docs = documentsView(kase, api);
     return [
       banner ? h("div", { class: `banner ${banner.kind}` }, icon(banner.icon), banner.text) : null,
+      isFailed(row) ? h("p", {}, retryButton(row, { api, ctx })) : null,
+      h("p", {}, otherTabLink("parsing", row, "See how it was parsed")),
       buildDelegate(row),
       buildForm(row, kase),
-      h("div", { class: "section" }, h("h3", {}, "Original email and documents"),
-        fold("Email body", h("pre", { class: "doc" }, kase.email.body || ""), true),
-        docs ? fold("Documents", docs) : null),
+      emailAndDocuments(kase, api),
     ];
   }
 
-  async function renderDetail() {
-    const mine = ++token;
-    clear(detailEl);
-    panes.classList.toggle("has-selection", Boolean(selectedId));
-    if (!selectedId) {
-      const failed = reviewRows().filter(isFailed).length;
-      detailEl.append(
-        h("div", { class: "empty" },
-          "Select a case to review and correct the fields.",
-          failed ? h("p", { class: "muted", style: "margin-top:8px" }, `${failed} of these failed on the model API, often a rate limit or an exhausted quota, not because of the documents. Retry them once the quota is back.`) : null),
-      );
-      return;
-    }
-    const row = rows().find((candidate) => candidate.email_id === selectedId);
-    if (!row) {
-      detailEl.append(backButton(), h("div", { class: "empty" }, `There is no case for ${selectedId}.`));
-      return;
-    }
-    const body = h("div", {}, h("div", { class: "skeleton" }));
-    detailEl.append(...detailHeader(row), body);
-    try {
-      const kase = await api.caseFor(selectedId, ctx.getReport().scope);
-      if (mine !== token) return;
-      clear(body).append(...detailSections(row, kase));
-    } catch (err) {
-      if (mine !== token) return;
-      clear(body).append(h("div", { class: "banner review" }, icon("alert"), err.message));
-    }
+  function emptyDetail() {
+    const failed = reviewRows().filter(isFailed).length;
+    return h("div", { class: "empty" },
+      "Select a case to review and correct the fields.",
+      failed ? h("p", { class: "muted", style: "margin-top:8px" }, `${failed} of these failed on the model API, often a rate limit or an exhausted quota, not because of the documents. Retry them once the quota is back.`) : null);
   }
 
   renderList();
-  renderDetail();
+  pane.renderDetail();
 
   return {
-    setId(id) {
-      selectedId = id;
-      markSelected();
-      renderDetail();
-    },
+    setId: pane.setId,
     refresh() {
       saved = readSaved();
       delegations = readDelegations();
       renderList();
-      markSelected();
-      renderDetail();
+      pane.refresh();
     },
-    move(delta) {
-      const list = activeRows();
-      if (!list.length) return;
-      const at = list.findIndex((row) => row.email_id === selectedId);
-      const next = list[Math.min(list.length - 1, Math.max(0, at === -1 ? 0 : at + delta))];
-      location.hash = routeHash("review", next.email_id);
-    },
-    focusSearch() { search.focus(); },
+    move: pane.move,
+    focusSearch: pane.focusSearch,
   };
 }

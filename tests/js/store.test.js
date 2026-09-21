@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   caseBanner, createStore, fieldRows, filterRows, groupCounts, isFailed, needsAttention, sortRows, statusChip, tabCounts,
-  delegate, escalationNote, nextStep, takeBack, priorityOf, sortByPriority, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
+  delegate, escalationNote, needsPerson, nextStep, takeBack, priorityOf, sortByPriority, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
 } from "../../web/js/store.js";
 import { FIELDS } from "../../web/js/util/format.js";
 
@@ -242,4 +242,10 @@ test("taking a case back removes only that hand-over", () => {
   const map = { e4: { to: "A", at: "t" }, e5: { to: "B", at: "t" } };
   assert.deepEqual(takeBack(map, "e4"), { e5: { to: "B", at: "t" } });
   assert.equal(Object.keys(map).length, 2);
+});
+
+test("a case needs a person when it needs review or failed, and a mismatch does not", () => {
+  assert.deepEqual(ROWS.filter(needsPerson).map((r) => r.email_id), ["e4", "e5"]);
+  assert.equal(needsPerson(row("x", "BL_COMPARISON", "MISMATCH")), false);
+  assert.equal(needsPerson(row("x", "GENERAL", "OK", { review_reason: "processing_error" })), true);
 });

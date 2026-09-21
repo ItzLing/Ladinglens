@@ -72,7 +72,7 @@ function mountTab() {
   } else if (tab === "data") app.view = mountData(contentEl, ctx);
   else if (tab === "report") app.view = mountReport(contentEl, ctx);
   else if (tab === "review") {
-    app.view = mountReview(contentEl, ctx);
+    app.view = mountReview(contentEl, { ...ctx, onRetried: reload });
     app.view.setId(id);
   }
   else app.view = mountSoon(contentEl, { tab });

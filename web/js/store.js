@@ -10,6 +10,11 @@ export function needsAttention(row) {
   return row.status === "MISMATCH" || row.status === "NEEDS_REVIEW";
 }
 
+/** A case only a person can settle: it needs review, or it failed on the model API. Review's queue is exactly these. */
+export function needsPerson(row) {
+  return row.status === "NEEDS_REVIEW" || isFailed(row);
+}
+
 /** What to show as a row's status, or null when the label says it all. */
 export function statusChip(row) {
   if (isFailed(row)) return { kind: "failed", icon: "refresh", text: "Failed. Retry" };
