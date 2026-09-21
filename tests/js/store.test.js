@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   caseBanner, createStore, fieldRows, filterRows, groupCounts, isFailed, needsAttention, sortRows, statusChip, tabCounts,
-  escalationNote, reportGroups, reportTiles,
+  escalationNote, nextStep, priorityOf, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
 } from "../../web/js/store.js";
 import { FIELDS } from "../../web/js/util/format.js";
 
@@ -166,7 +166,8 @@ test("report groups follow the label order, count what is inside, and honour the
   const order = ["BL_COMPARISON", "SI_REQUEST", "INVOICE_QUERY", "GENERAL", "SPAM"];
   const groups = reportGroups(ROWS, {}, order);
   assert.deepEqual(groups.map((g) => g.category), ["BL_COMPARISON", "SI_REQUEST", "GENERAL", "SPAM"]);
-  assert.deepEqual(groups[0].items.map((r) => r.email_id), ["e4", "e2", "e1"]);
+  // mismatches first, then reviews, then the clean checks
+  assert.deepEqual(groups[0].items.map((r) => r.email_id), ["e2", "e4", "e1"]);
   assert.equal(groups[0].mismatches, 1);
   assert.equal(groups[0].reviews, 1);
   assert.deepEqual(reportGroups(ROWS, { status: "MISMATCH" }, order).map((g) => g.category), ["BL_COMPARISON"]);
@@ -174,4 +175,48 @@ test("report groups follow the label order, count what is inside, and honour the
   assert.deepEqual(reportGroups(ROWS, { q: "zzz" }, order), []);
   // a label the order does not know about is still listed, after the known ones
   assert.equal(reportGroups([row("x", "NEW_KIND", "OK")], {}, order)[0].category, "NEW_KIND");
+});
+
+test("priority follows what a person must do: mismatch high, review medium, clean low", () => {
+  assert.deepEqual(ROWS.map(priorityOf), ["low", "high", "low", "medium", "medium", "low"]);
+});
+
+test("the next step is one plain sentence for every kind of email", () => {
+  assert.match(nextStep(ROWS[1]), /correct the flagged BL fields/);
+  assert.match(nextStep(ROWS[3]), /Send to a person/);
+  assert.match(nextStep(ROWS[4]), /^Retry this email/);
+  assert.match(nextStep(ROWS[0]), /Approve the document check/);
+  assert.match(nextStep(ROWS[2]), /Archive or block/);
+  assert.match(nextStep(ROWS[5]), /SI preparation queue/);
+  assert.equal(nextStep(row("x", "GENERAL", "OK")), "No document check needed.");
+});
+
+test("the result is a plain phrase, and a failure is never called a verdict", () => {
+  assert.equal(resultText(ROWS[0]), "No mismatch");
+  assert.equal(resultText(ROWS[1]), "Mismatch");
+  assert.equal(resultText(ROWS[3]), "Value needs checking");
+  assert.equal(resultText(ROWS[4]), "Processing failed");
+});
+
+test("insights: share decided without a person, what is left to do, what was checked", () => {
+  const values = reportInsights({ total: 10, statuses: { OK: 6, MISMATCH: 1, NEEDS_REVIEW: 3 }, categories: { BL_COMPARISON: 4 } }).map((i) => i.value);
+  assert.deepEqual(values, ["70%", 4, 4]);
+  assert.equal(reportInsights({})[0].value, "0%");
+});
+
+test("status pills count what each would show, for the current search only", () => {
+  assert.deepEqual(statusCounts(ROWS), { "": 6, OK: 3, MISMATCH: 1, NEEDS_REVIEW: 2 });
+  assert.deepEqual(statusCounts(ROWS, { q: "watches" }), { "": 1, OK: 1 });
+});
+
+test("the summary text lists the headline numbers", () => {
+  const text = summaryText({ summary: { total: 9, categories: { BL_COMPARISON: 5 }, defects: 2, statuses: { MISMATCH: 2, NEEDS_REVIEW: 1 } } });
+  assert.equal(text, "Ladinglens report\nEmails processed: 9\nComparison requests: 5\nMismatches found: 2\nNeeds human review: 1\nAction required: 3");
+});
+
+test("the CSV has a header, quotes every cell, and doubles quotes inside", () => {
+  const csv = rowsToCsv([row("e2", "BL_COMPARISON", "MISMATCH", { subject: 'Say "hi", ok', defect_fields: ["consignee", "notify_party"], confidence: 0.956 })]).split("\n");
+  assert.equal(csv[0], '"priority","email_id","subject","from","category","result","confidence","next_step","fields_flagged"');
+  assert.equal(csv[1], '"High","e2","Say ""hi"", ok","a@x.com","BL comparison","Mismatch","96%","Ask the documentation team to correct the flagged BL fields.","Consignee, Notify party"');
+  assert.equal(rowsToCsv([]).split("\n").length, 1);
 });

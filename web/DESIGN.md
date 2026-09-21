@@ -262,20 +262,29 @@ kept only as a suggestion for that draft.
 
 ### 6.6 Tab 4: Report
 
-The old single-page dashboard, moved into the app. From the top:
+The old single-page dashboard, moved into the app and widened to fill the screen, with the ideas
+from ZuYenn's redesign added. From the top:
 
 - **Four numbers:** emails processed, comparison requests, mismatches found, escalated to a
-  human.
+  human. **Copy summary** puts them on the clipboard as text; **Export CSV** downloads the
+  emails currently shown (priority, email, subject, sender, label, result, confidence, next
+  step, fields flagged).
 - **A note** when many emails were escalated for one reason (a failed model API, or attachments
   that could not be read), so a big number is never unexplained.
-- **Emails by category:** one bar per label.
+- **Inbox mix:** three reading aids (automation ready %, action required, document checks) above
+  one bar per label.
 - **Emails, folded by label.** Every label is a closed fold showing its count and how many
   mismatches and reviews are inside, so the page stays short. A fold shows 25 rows at a time
-  with "Show more". A row opens the email in Parsing. A status filter and a search sit above
-  the folds; while either is set the matching folds open by themselves, and they fold again
-  when it is cleared.
+  with "Show more". A row opens the email in Parsing. Each row carries a **priority** (High for
+  a mismatch, Medium for a review, Low for a clean check), its result chip, and a one-line **next
+  step**; rows are ordered by priority. Result pills (All, Mismatch, Needs review, No mismatch,
+  each with its count) and a search sit above the folds; while either is set the matching folds
+  open by themselves, and they fold again when it is cleared.
 
 It reads the same report as Home and Parsing, so it works in the live app and in the demo.
+
+Home also shows ZuYenn's four-step route (Classify, Extract, Compare, Review) and the three
+outcome cards (primary user, business value, decision rule).
 
 ## 7. Shared design
 

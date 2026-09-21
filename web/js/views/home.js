@@ -7,6 +7,19 @@ const FEATURES = [
   { name: "LLM", text: "Classifies emails and maps differently labelled fields." },
 ];
 
+const STEPS = [
+  ["01", "Classify", "Sort inbox messages by intent."],
+  ["02", "Extract", "Read SI and draft BL fields."],
+  ["03", "Compare", "Flag mismatched shipment values."],
+  ["04", "Review", "Escalate uncertain cases with evidence."],
+];
+
+const OUTCOMES = [
+  ["Primary user", "Shipping operations team"],
+  ["Business value", "Less manual checking, fewer BL corrections"],
+  ["Decision rule", "Escalate when unsure; never guess"],
+];
+
 export function mountHome(root, { getReport, api }) {
   const attention = h("p", { class: "attention" });
 
@@ -16,6 +29,11 @@ export function mountHome(root, { getReport, api }) {
     h("hr", { class: "rule", style: "margin-top:0" }),
     h("h2", {}, "Features"),
     h("div", { class: "features" }, FEATURES.map((f) => h("div", { class: "feature" }, h("strong", {}, f.name), h("span", {}, f.text)))),
+    h("hr", { class: "rule" }),
+    h("h2", {}, "How it works"),
+    h("p", { class: "secondary" }, "Business users see which emails need attention, which documents already match, and exactly what must be fixed before the draft Bill of Lading is finalized."),
+    h("div", { class: "route", "aria-label": "Processing route" }, STEPS.map(([n, name, text]) => h("div", { class: "route-step" }, h("span", { class: "step-num" }, n), h("strong", {}, name), h("span", {}, text)))),
+    h("div", { class: "outcomes", "aria-label": "Business outcomes" }, OUTCOMES.map(([label, text]) => h("div", { class: "outcome" }, h("span", {}, label), h("strong", {}, text)))),
     h("hr", { class: "rule" }),
     h(
       "div",

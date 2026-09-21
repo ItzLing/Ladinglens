@@ -1,4 +1,4 @@
-import { FIELDS, REASON, plural } from "./util/format.js";
+import { FIELDS, REASON, categoryLabel, plural } from "./util/format.js";
 
 // ---- pure selectors, unit-tested ----
 
@@ -79,6 +79,37 @@ export function fieldRows(record, fields) {
   });
 }
 
+export const STATUS_LABEL = { OK: "No mismatch", MISMATCH: "Mismatch", NEEDS_REVIEW: "Needs review" };
+export const PRIORITY_LABEL = { high: "High", medium: "Medium", low: "Low" };
+const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
+
+/** Fix mismatches first, then review uncertain cases, then archive the clean checks. */
+export function priorityOf(row) {
+  if (row.status === "MISMATCH") return "high";
+  if (row.status === "NEEDS_REVIEW") return "medium";
+  return "low";
+}
+
+/** What a person should do with this email next, in one sentence. */
+export function nextStep(row) {
+  if (isFailed(row)) return "Retry this email. The failure was not about the documents.";
+  if (row.status === "MISMATCH") return "Ask the documentation team to correct the flagged BL fields.";
+  if (row.status === "NEEDS_REVIEW") return "Send to a person with the attachments and the reason.";
+  return {
+    BL_COMPARISON: "Approve the document check and continue the release workflow.",
+    SPAM: "Archive or block the sender.",
+    INVOICE_QUERY: "Route to the finance or billing queue.",
+    SI_REQUEST: "Route to the SI preparation queue.",
+  }[row.category] ?? "No document check needed.";
+}
+
+/** The result as one plain phrase, for the CSV and the summary. */
+export function resultText(row) {
+  if (isFailed(row)) return REASON.processing_error;
+  if (row.status === "NEEDS_REVIEW") return REASON[row.review_reason] ?? STATUS_LABEL.NEEDS_REVIEW;
+  return STATUS_LABEL[row.status] ?? "No mismatch";
+}
+
 /** The four headline numbers of the Report tab. */
 export function reportTiles(summary = {}) {
   return [
@@ -86,6 +117,18 @@ export function reportTiles(summary = {}) {
     { label: "Comparison requests", value: summary.categories?.BL_COMPARISON ?? 0, note: "routed to document checking" },
     { label: "Mismatches found", value: summary.defects ?? 0, note: "SI and BL disagree" },
     { label: "Escalated to a human", value: summary.statuses?.NEEDS_REVIEW ?? 0, note: "not decided automatically" },
+  ];
+}
+
+/** Three reading aids for the inbox mix: how much needed no person, what is left to do, and what was checked. */
+export function reportInsights(summary = {}) {
+  const total = summary.total ?? 0;
+  const statuses = summary.statuses ?? {};
+  const decided = (statuses.OK ?? 0) + (statuses.MISMATCH ?? 0);
+  return [
+    { label: "Automation ready", value: `${total ? Math.round((decided / total) * 100) : 0}%`, note: "classified or compared without manual triage" },
+    { label: "Action required", value: (statuses.MISMATCH ?? 0) + (statuses.NEEDS_REVIEW ?? 0), note: "mismatches plus review cases" },
+    { label: "Document checks", value: summary.categories?.BL_COMPARISON ?? 0, note: "emails routed into SI/BL verification" },
   ];
 }
 
@@ -101,7 +144,48 @@ export function escalationNote(summary = {}) {
   return null;
 }
 
-export const STATUS_LABEL = { OK: "No mismatch", MISMATCH: "Mismatch", NEEDS_REVIEW: "Needs review" };
+/** A short plain-text summary of the run, to paste into a message. */
+export function summaryText(report) {
+  const s = report?.summary ?? {};
+  const statuses = s.statuses ?? {};
+  return [
+    "Ladinglens report",
+    `Emails processed: ${s.total ?? 0}`,
+    `Comparison requests: ${s.categories?.BL_COMPARISON ?? 0}`,
+    `Mismatches found: ${s.defects ?? 0}`,
+    `Needs human review: ${statuses.NEEDS_REVIEW ?? 0}`,
+    `Action required: ${(statuses.MISMATCH ?? 0) + (statuses.NEEDS_REVIEW ?? 0)}`,
+  ].join("\n");
+}
+
+const csvCell = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+
+/** The rows as CSV text, in the order given. */
+export function rowsToCsv(rows) {
+  const header = ["priority", "email_id", "subject", "from", "category", "result", "confidence", "next_step", "fields_flagged"];
+  const lines = rows.map((r) =>
+    [
+      PRIORITY_LABEL[priorityOf(r)],
+      r.email_id,
+      r.subject,
+      r.from,
+      categoryLabel(r.category),
+      resultText(r),
+      typeof r.confidence === "number" ? `${Math.round(r.confidence * 100)}%` : "",
+      nextStep(r),
+      (r.defect_fields ?? []).map((k) => FIELD_LABEL[k] ?? k).join(", "),
+    ].map(csvCell).join(","),
+  );
+  return [header.map(csvCell).join(","), ...lines].join("\n");
+}
+
+/** Rows per status for the shortcut pills, ignoring the chosen status so each pill shows what it would give. */
+export function statusCounts(rows, { q = "" } = {}) {
+  const pool = rows.filter((r) => matchesQuery(r, q));
+  const counts = { "": pool.length };
+  for (const r of pool) counts[r.status] = (counts[r.status] ?? 0) + 1;
+  return counts;
+}
 
 /** Emails grouped by label for the folded Report list, in label order, empty groups left out. */
 export function reportGroups(rows, { status = "", q = "" } = {}, order = []) {
@@ -109,7 +193,9 @@ export function reportGroups(rows, { status = "", q = "" } = {}, order = []) {
   const labels = [...order, ...new Set(pool.map((r) => r.category).filter((c) => !order.includes(c)))];
   return labels
     .map((category) => {
-      const items = sortRows(pool.filter((r) => r.category === category));
+      const items = pool
+        .filter((r) => r.category === category)
+        .sort((a, b) => PRIORITY_RANK[priorityOf(a)] - PRIORITY_RANK[priorityOf(b)] || a.email_id.localeCompare(b.email_id));
       return {
         category,
         items,
