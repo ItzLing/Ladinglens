@@ -994,3 +994,46 @@ emails caught.
   browser pane's screenshots only work after `tabs_select` fronts the tab.
 
 **Synced through:** `334053b` (committed by task: `8c059b5`, `66b54fc`, `4fb134e`, `34176bb`, `334053b`, then docs)
+
+---
+
+## 2026-09-21 — Codex — Brendan (Task 4 reliability)
+
+**What changed:**
+- Ported bounded OpenAI-compatible provider retries onto the current multimodal client:
+  exactly three application attempts with 0.5s and 1.0s delays for timeouts, connection
+  errors, HTTP 408/429, and every 5xx response. SDK retries remain disabled.
+- Added metadata-only request/stage logging and failure-stage correlation without logging
+  prompts, document contents, provider response bodies, credentials, or exception messages.
+- Hardened classification, SI extraction, BL extraction, comparison, worker, and batch
+  boundaries so one malformed or failed email produces `NEEDS_REVIEW` without ending the run.
+- Added 31 `unittest` cases using the installed OpenAI SDK's real exception classes, including
+  vision-mode preservation, concurrent email isolation, checkpoint resume, and exact evaluator
+  output keys.
+
+**Why:**
+- Task 4 requires transient provider failures to retry predictably while permanent failures
+  fail fast, and no individual email failure may terminate or corrupt the batch.
+
+**Decisions made:**
+- Did not apply the older `e822ada` patch because `git apply --check` failed against `9986162`.
+  The old patch targeted the pre-OCR `_generate` signature and text-only attachment path, so
+  forcing it would have replaced newer PDF/DOCX/XLSX/vision work.
+- Kept `failure_stage` internal to checkpoint/review records. Evaluator output and the official
+  seven comparison fields remain unchanged.
+- Kept malformed model JSON and document validation failures non-retryable. Provider failures
+  are `processing_error`; unreadable/unsupported documents remain `unreadable`.
+
+**Verification:**
+- Installed `requirements.txt` into the existing ignored Python 3.14 virtual environment.
+  OpenAI SDK 3.16.2 imports successfully and `pip check` reports no broken requirements.
+- `python -m unittest -v`: 31/31 passed with the real SDK; syntax compilation passed.
+- Uvicorn started cleanly; `GET /docs` and `GET /openapi.json` returned HTTP 200 and `/run`
+  remains present.
+
+**Open questions / next steps:**
+- No official dataset is present and `.env` has no `LLM_API_KEY`, so the requested one-email
+  real-provider check remains blocked. Do not fabricate either prerequisite.
+- Review the uncommitted Task 4 diff before committing. No push, merge, or PR was made.
+
+**Synced through:** `99861622c301b83bf5e5dd687d662a91ff32dda8` (Task 4 changes uncommitted)
