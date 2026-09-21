@@ -105,14 +105,17 @@ model and half by another. `resume` is off by default for that reason.
 
 ## Polling the inbox on a schedule
 
-`scripts/poll.py` calls `POST /run?resume=true` on an interval. Because resume skips
-emails already in `results.jsonl`, each tick only processes what is new and retries
-whatever previously failed on the API -- a tick that finds nothing new costs no calls.
+`scripts/poll.py` calls `POST /run?new_only=true` on an interval. Each tick processes only
+the emails with no saved result in `results.jsonl` (new arrivals) and leaves everything
+already saved alone, failed ones included -- a tick that finds nothing new costs no calls, and
+an API outage is not retried (and re-billed) every interval. Add `--retry-failed` to have it
+call `resume=true` instead, which also retries the emails that failed on the API.
 
 ```bash
 python scripts/poll.py                 # loop, every 5 minutes
 python scripts/poll.py --interval 120  # every 2 minutes
 python scripts/poll.py --once          # one tick, for Task Scheduler / cron
+python scripts/poll.py --retry-failed  # also retry emails that failed on the API
 ```
 
 ```powershell
@@ -313,7 +316,7 @@ app/
     compare.py             # stage 3: SI vs BL -> mismatches (deterministic, no LLM)
     run.py                  # orchestrator, checkpointing, decides needs_review
 scripts/
-  poll.py               # polls /run?resume=true on an interval
+  poll.py               # polls /run?new_only=true on an interval
   recompare.py           # re-applies stage 3 offline, without spending API quota
   export_excel.py        # a finished run -> .xlsx for the operations team
   feed_inbox.py          # drips emails into data/live/ to simulate arrivals
