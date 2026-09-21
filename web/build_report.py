@@ -75,6 +75,7 @@ def main() -> None:
             "has_defect": record.get("has_defect", False),
             "defect_fields": record.get("defect_fields", []),
             "mismatches": record.get("mismatches", {}),
+            "field_issues": record.get("field_issues", []),
             "attachments": email.get("attachments", []),
         }
 
@@ -87,9 +88,9 @@ def main() -> None:
                 )
                 if match:
                     try:
-                        # ocr=False: building the report never spends API calls.
-                        # Scans show up only if the run already transcribed them.
-                        text = read_document(inbox, match, ocr=False)
+                        # Never spends API calls: a scan is read by local OCR, and
+                        # is simply left out if Tesseract is not installed.
+                        text = read_document(inbox, match)
                         entry[f"{role.lower()}_text"] = text[:MAX_DOC_CHARS]
                     except (ValueError, OSError):
                         pass
