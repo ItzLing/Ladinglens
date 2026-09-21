@@ -5,7 +5,7 @@ Static review UI over a completed pipeline run. No build step, no dependencies -
 
 ## Regenerate the data
 
-`report.json` is built from `results.jsonl` (the run checkpoint) joined with the
+`report.json` is built from `results/results.jsonl` (the run checkpoint) joined with the
 inbox records, so it carries the per-field SI/BL values that `output.json` drops.
 
 ```bash

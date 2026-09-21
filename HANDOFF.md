@@ -586,3 +586,224 @@ emails caught.
 - `HANDOFF.md` is ~11 entries; archive the old ones into `HANDOFF-archive.md` as its own commit.
 
 **Synced through:** `aa38e80` (committed as `8983325`, `6d20a09`, `ed6c5ce`, `aa38e80`, one per task)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (OCR fallback ladder in extract.py)
+
+**What changed:**
+- `app/pipeline/extract.py`: `extract_document(inbox, path, label)` now runs the 7-step ladder
+  from the refined design (ladder is documented at the top of the file). `extract_fields()` and
+  its prompt are unchanged -- they are step 5's "LLM parses clean text".
+- New `app/pipeline/ocr.py`: `pytesseract` per-word OCR, `field_confidence` = **minimum** over a
+  field's words, page quality = mean, keyword label lookup (`keyword_hits`), and `label_line`
+  / `text_lines` for reading the raw "Label: value" line of any text.
+- New `app/pipeline/validate.py`: weight (number, KG unit, 100-1,000,000), container count
+  (leading integer, 1-200), names/ports (has letters, no stray symbols, not a placeholder such
+  as `TBA`/`N/A`). Limits were set from the dataset (20,065-360,415 kg; 1-16 containers).
+- `read_document.py` rewritten around `load_document()` -> `LoadedDocument(text | images)`.
+  Adds `.jpg/.jpeg/.png/.tif/.tiff` (multi-page TIFF supported). `read_document(inbox, path)`
+  remains for the dashboard and now uses local OCR; its `ocr=` argument is gone.
+- `llm_client.py`: `call_vision_text` replaced by `call_vision_json`.
+- `schema.py`: `FieldIssue` (document, file, field, reason, detail, source, value, evidence),
+  `FieldIssueReason` (not_found / invalid_value / unreadable), `ExtractionResult`, and
+  `ComparisonResult.field_issues`.
+- `run.py`: uses `extract_document`; any unresolved field -> `needs_review` /
+  `missing_value` with `field_issues` attached, never compared. `_record` writes them to
+  `results.jsonl`; `web/build_report.py` passes them into `report.json`.
+- New `tests/test_extract_ladder.py` (33 stdlib `unittest` tests, all offline).
+  `python -m unittest discover -s tests`. Added to `AGENT.md`.
+- `requirements.txt` + `pytesseract`; `.env.example` + `OCR_MIN_CONFIDENCE`, `TESSERACT_CMD`;
+  README rewritten for the ladder; `ocr_cache/` and its `.gitignore` entry removed.
+
+**Why:**
+- The design was refined after the last entry: OCR should be a Python library with per-field
+  confidence, vision only per low-confidence field, and every field validated, with unresolved
+  fields reported with evidence rather than guessed. The previous entry's OCR (a vision LLM
+  transcribing the whole page, cached) did not match that, so it is **superseded** (that entry
+  is left as written; the log is append-only).
+
+**Design vs code, before this change (gap analysis):**
+- Already correct: step 1 (text extraction first, PDF/Word/Excel/txt), step 5's LLM text parse,
+  a `needs_review`/`missing_value` route.
+- Missing: Python OCR, image formats, per-field confidence, per-field vision, validation,
+  per-field reason + evidence (run.py only had "any field None").
+
+**Decisions made:**
+- **Text documents stay LLM-first.** The keyword pass exists only inside the OCR path. Measured
+  on the corpus: keywords alone find all 7 fields in just 124 of 242 documents (PDFs put values on
+  the next line; many label variants), so the LLM is still needed. Making keyword-first the
+  default for text would save calls but risks the current score -- left as an open decision.
+- **One vision call per document**, listing only the fields that need it, not one call per
+  field. Same routing, far fewer calls.
+- **"OCR confidence is fine" for a field the keyword pass did not find** is judged by the
+  page's mean word confidence >= `OCR_MIN_CONFIDENCE`. Below it, the field goes to vision.
+- **No Tesseract -> every field goes to vision** rather than failing. Scans still work
+  (verified live), at one vision call per document.
+- **Validation also checks the raw source line for text documents.** Live, the model turned
+  `Port of Loading: ____MT` into `MT`, which is a valid-looking string; only the raw line
+  exposes it. On the corpus this rejects 5 of 1,564 raw values, all in `email_516`-`518`, the
+  emails whose own body says fields were left blank -- zero false positives.
+- Unresolved fields all map to `review_reason=missing_value` in the submission (the hackathon's
+  enum has no finer reason); the finer reason lives in `field_issues`, which stays out of
+  `output.json` so it keeps the `sample_submission.json` shape.
+- A text document has no page image, so a validation failure there ends the ladder in
+  `needs_review` (no vision fallback).
+- Kept the OCR-cache removal simple: no cache. Vision replies are not cached.
+
+**Verification:**
+- 33 tests pass. Mutation-checked: swapping min for mean, disabling validation, and a
+  threshold of 0 each make specific tests fail.
+- Live (Gemini `gemini-3.1-flash-lite`; `gemini-3.6-flash` is capped at 20 requests/day on this
+  key): both `email_512` scans -> all 7 fields correct via the vision branch; `email_516`
+  (`N/A` weight), `517` (`____MT`, `TBA`), `518` (`N/A`, `____MT`) -> flagged with the field's own
+  line as evidence; `email_059` (text PDF) -> 7/7, no false alarm.
+- **Not verified:** any real Tesseract output. **Tesseract is not installed on this machine**
+  (`winget install --id UB-Mannheim.TesseractOCR` needs an install, which I did not do without
+  asking), so steps 2-3 and 5 only run against mocks. `OCR_MIN_CONFIDENCE=80` is a placeholder.
+  No score either -- there is no `ground_truth.json` locally.
+
+**Open questions / next steps:**
+- **Install Tesseract and calibrate `OCR_MIN_CONFIDENCE`.** The 6 dataset scans are clean
+  rendered text, so they won't exercise the threshold; make blurred / JPEG-compressed / skewed
+  versions to see where per-word confidence actually falls.
+- **OCR library:** `pytesseract` chosen as you suggested (pure-Python wrapper, needs the
+  Tesseract program). Alternatives (RapidOCR/EasyOCR) need onnxruntime/torch wheels that may not
+  exist for Python 3.14. The engine call is isolated in `ocr.ocr_lines`, so swapping is one
+  function.
+- **Vision model.** Any OpenAI-compatible vision model via `LLM_VISION_MODEL`. Gemini works;
+  `gemini-3.1-flash-lite` is the cheap one that had quota. Decide the cost-sensitive choice.
+- **Keyword-first for text documents?** Would cut LLM calls; needs a ground-truth comparison
+  first (see Decisions).
+- **Latent bug, not fixed:** `extract_fields` builds `ShipmentFields(**reply)`, so a numeric
+  JSON value (xlsx weights are bare numbers, e.g. `341715`) raises a pydantic `ValueError`,
+  which `run.py` files as `unreadable`. Not seen in live runs, but a one-line
+  `coerce_numbers_to_str` on `ShipmentFields` would remove the risk.
+- **Design inconsistencies for you to decide** (all outside `extract.py`, so not touched):
+  - `scripts/poll.py` + `GET /status` + the 409 run lock (teammate's "scheduling" commit) vs
+    "no streaming pipeline". It is not Airflow/Spark/n8n, but it is scheduling; keep or drop?
+  - `web/` is a static HTML dashboard, while the stack says Streamlit. `web/index.html` also
+    doesn't render `field_issues` yet.
+  - `README.md` still says Gemini's free tier is 500 requests/day/model; `gemini-3.6-flash`
+    returned a limit of 20.
+- `HANDOFF.md` is now ~12 entries; archive the old ones as its own commit.
+
+**Synced through:** `c456daf` (committed by task: `65b57e0`, `6089248`, `e68e4f3`, `8d971e6`, `f283634`, `ccdd548`, `654d1e0`, `c456daf`)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (Tesseract verified against the real scans)
+
+**What changed:**
+- `app/pipeline/ocr.py`: `ocr_lines()` now calls `ocr_available()` itself. The Tesseract path
+  (`TESSERACT_CMD`) was only being set as a side effect of `ocr_available()`, so anything calling
+  `ocr_lines()` directly got `TesseractNotFoundError`. The pipeline was unaffected (it always
+  called `ocr_available()` first). Regression test added (34 tests, all pass).
+- Local `.env` (gitignored): `TESSERACT_CMD=F:\Apps\Tesseract-OCR\tesseract.exe`.
+
+**Environment facts:**
+- Tesseract **5.5.3** is installed at `F:\Apps\Tesseract-OCR` (161 languages). It is not on
+  `PATH` and not in the default `C:\Program Files` folder, so `TESSERACT_CMD` is required on this
+  machine.
+- `pip install tesseract` installs an **unrelated astronomy library** ("Tesselation based
+  Recovery of Amorphous halo Concentrations"), not the OCR engine. It is in `.venv` and does no
+  harm, but can be removed with `pip uninstall tesseract`. The OCR engine is a Windows program;
+  pip only provides the `pytesseract` wrapper.
+
+**Verification (real Tesseract, real scans):**
+- `email_512`-`514` (SI + BL): page confidence only **62-72** and per-field 10-69. It misreads
+  `6 x 40'HC` as `8x 40}` (conf 10) and `128,544` as `128.544`; OCR also often drops the colon
+  after a label, so the keyword pass finds 0-2 of 7 fields.
+- So at `OCR_MIN_CONFIDENCE=80` (kept, per the owner) every field goes to the vision model.
+  End to end on all 6 documents: **7/7 fields, all correct, 0 issues, 6 vision calls** (one per
+  document), on `gemini-3.1-flash-lite`. Nothing Tesseract misread was accepted.
+
+**Findings (not acted on):**
+- **Upscaling before OCR helps.** Page confidence goes ~72 -> ~89 at 2x-3x and the text is nearly
+  right (`Containers 6 x 40'HC`, `Gross Weight 128,544 KG`). But it is not clean: per-field
+  confidence stays erratic (26-89), 3x is worse than 2x on some documents, and dropped colons
+  still cap keyword hits at 3/7. Worth a proper experiment when the threshold is calibrated; it
+  would cut vision calls, not remove them.
+- The keyword matcher requires a colon. Accepting a missing/garbled one ("Shipper. ACME") would
+  raise keyword hits, at the risk of false matches.
+
+**Decisions / deferred:**
+- `OCR_MIN_CONFIDENCE` stays 80; owner will verify later.
+- Left for later, as instructed: the scheduling/`poll.py` and static-dashboard-vs-Streamlit
+  questions, and the numeric-JSON `ShipmentFields` coercion bug (see previous entry).
+- "Keyword-first for text documents" is still an open, undecided idea (explained to the owner,
+  who was unsure what it meant): use the deterministic label lookup as the *first* extractor
+  for text files too, and call the LLM only for fields it misses. It would save LLM calls but
+  finds all 7 fields in only 124 of 242 documents, so the LLM stays primary for now.
+
+**Open questions / next steps:**
+- Calibrate `OCR_MIN_CONFIDENCE` on degraded scans (blur, JPEG, skew); the dataset's own scans
+  are clean, and even they score low at native resolution.
+- Try 2x upscaling in `ocr_lines()`, measured against the vision-call count.
+
+**Synced through:** `c456daf` (committed by task: `65b57e0`, `6089248`, `e68e4f3`, `8d971e6`, `f283634`, `ccdd548`, `654d1e0`, `c456daf`)
+
+
+---
+
+## 2026-09-21 — Claude Code — Ling (results/ folder, one inbox path, clean-up)
+
+**What changed:**
+- New `results/` folder: every pipeline output now goes there (`results.jsonl`, `output.json`,
+  `classify_cache.json` and their `.sample` variants). Only `results/README.md` is tracked; it
+  explains each file and how to read a run. `.gitignore`: `results/*` + `!results/README.md`
+  replaces the three root-level patterns.
+- New `app/paths.py` is the single source for `ROOT_DIR`, `DATA_DIR`, `RESULTS_DIR`,
+  `results_file(name)` and `inbox_source()`. `main.py` (incl. `/status`) and `build_report.py`
+  use it, so they cannot drift apart again. `inbox_source()` reads `INBOX_SOURCE` (default
+  `data/`) and resolves a relative folder from the repo root, not the cwd; a URL is untouched.
+- `web/build_report.py`: **fixed a bug** -- it hard-coded `data/data_v2`, which does not exist
+  for anyone whose data is in `data/inbox` + `data/attachments`. It now uses `inbox_source()`,
+  reads `results/results.jsonl`, and gains `--sample` (for a `?limit=N` run). It exits with a
+  clear message if there are no results yet, and **warns when records are `processing_error`**.
+- Stale `data_v2` mentions fixed in `README.md`, `.env.example`; results paths fixed in
+  `README.md`, `web/README.md`, `scripts/poll.py`, and the scoring commands
+  (`results/output.json`). 6 new tests (`tests/test_paths.py`); 40 pass.
+- Cleared the branch of result clutter: deleted the untracked run files, and `git rm`'d the two
+  tracked scratch dumps `results.jsonl.bak` and `results.jsonl.afterretry` (recoverable from
+  commit `8ce18bb`: `git show 8ce18bb:results.jsonl.bak`).
+
+**Why (what the owner hit):**
+- They ran the pipeline and could not tell what it output. It output nothing useful: all 45
+  records in `results.jsonl` and all 20 in `results.sample.jsonl` were `NEEDS_REVIEW` /
+  `processing_error`, i.e. every email failed at the API (the 20/day quota on
+  `gemini-3.6-flash`). Nothing in the repo said so, which is why the build-report warning and
+  `results/README.md` were added.
+- Results were scattered across the repo root, and the inbox folder name disagreed between the
+  loader (`inbox/`, `attachments/`), the README (`data_v2/`) and `build_report.py`.
+
+**Decisions made:**
+- **The inbox layout is `<INBOX_SOURCE>/inbox/` + `<INBOX_SOURCE>/attachments/`**, fixed by
+  `data/loader.py`. `INBOX_SOURCE=data` is the default everywhere. `data_v2` survives only in
+  `.gitignore` (`data/data_v2/`), deliberately: it protects `ground_truth.json` for a teammate
+  who has the organizer bundle.
+- **`web/report.json` stays in `web/`, and stays tracked.** The dashboard is a static page
+  served from `web/` and fetches `report.json` relative to itself; serving from the repo root to
+  reach `results/` would also expose `.env` over `http.server`. It is also the data behind the
+  Vercel deploy (`web/README.md`), so deleting it would break that. It is the one output not in
+  `results/`, and `results/README.md` says so.
+- Kept the file names inside `results/` (no rename), so `resume` and the docs still line up.
+
+**Verification:**
+- Real 5-email run on `gemini-3.1-flash-lite`: 4 `OK`, 1 `MISMATCH` (`email_004`: consignee,
+  notify_party), 0 `processing_error`, all files written to `results/`, none at the repo root.
+  `build_report.py --sample` (output redirected to scratch, shipped `report.json` untouched)
+  read `data/inbox`, attached SI/BL text, and reported the same counts.
+
+**Open questions / next steps:**
+- **The dashboard UI needs redoing** (owner: "terrible"). Note the stack says Streamlit while
+  `web/` is a static page, and it does not show `field_issues` yet -- decide direction first.
+- `web/report.json` is the old 520-email report from an earlier run; regenerate it after a real
+  full run.
+- **A full run still needs quota.** `gemini-3.6-flash` allows 20 requests/day on this key; a full
+  run is ~724 calls. Use another model, a paid key, or Ollama.
+- `results/` now holds 3 real sample files from the 5-email check; delete them freely.
+
+**Synced through:** `8715675` (committed by task: `d2dc96b`, `120407d`, `a3f5a1f`, `8715675`, then docs)

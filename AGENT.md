@@ -48,7 +48,8 @@ as a small, separate step — don't fold it into an unrelated feature commit.
 ## General conventions
 
 - (Add language/framework/style conventions here as they're decided.)
-- (Add test commands here once a test setup exists.)
+- Tests: `python -m unittest discover -s tests` from the repo root. They mock OCR and the
+  LLM calls, so they need no API key and no Tesseract.
 
 ## Commit message convention
 

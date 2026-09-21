@@ -1,17 +1,14 @@
 """FastAPI app exposing POST /run."""
 import json
-import os
 import sys
 import threading
-from pathlib import Path
-
 from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT_DIR / "data"
+from app.paths import DATA_DIR, ROOT_DIR, inbox_source, results_file
+
 sys.path.insert(0, str(DATA_DIR))
 
 load_dotenv(ROOT_DIR / ".env")
@@ -33,14 +30,14 @@ _run_lock = threading.Lock()
 @app.get("/status")
 def status():
     """Whether a run is in progress, and what the last one produced."""
-    checkpoint = ROOT_DIR / "results.jsonl"
+    checkpoint = results_file("results.jsonl")
     processed = 0
     if checkpoint.exists():
         processed = sum(1 for line in checkpoint.read_text().splitlines() if line.strip())
     return {
         "running": _run_lock.locked(),
         "checkpoint_records": processed,
-        "output_written": (ROOT_DIR / "output.json").exists(),
+        "output_written": results_file("output.json").exists(),
     }
 
 
@@ -49,16 +46,17 @@ def run(
     limit: Optional[int] = Query(None, gt=0, description="Process only the first N emails"),
     resume: bool = Query(False, description="Continue from the checkpoint instead of starting over"),
 ):
-    """Run the pipeline, writing output.json and classify_cache.json.
+    """Run the pipeline, writing output.json and classify_cache.json into results/.
 
-    Reads INBOX_SOURCE from the environment: a local folder (defaults to
-    data/) or an http(s) URL if using the hackathon's Docker dataset server.
+    Reads INBOX_SOURCE from the environment: a folder holding inbox/ and
+    attachments/ (defaults to data/) or an http(s) URL if using the hackathon's
+    Docker dataset server.
 
     `limit` processes a subset, for iterating on prompts without spending a
     full run's quota. Those results land in output.sample.json instead, so a
     partial run can never overwrite a full baseline.
 
-    Results stream to results.jsonl as they complete. `resume` picks that file
+    Results stream to results/results.jsonl as they complete. `resume` picks that file
     back up rather than re-spending quota on emails already done -- it defaults
     to off, so a prompt change doesn't silently reuse stale verdicts.
     """
@@ -71,19 +69,18 @@ def run(
 
 
 def _do_run(limit: Optional[int], resume: bool) -> dict:
-    source = os.environ.get("INBOX_SOURCE", str(DATA_DIR))
-    inbox = Inbox(source)
+    inbox = Inbox(inbox_source())
 
     suffix = ".sample" if limit else ""
-    checkpoint_path = ROOT_DIR / f"results{suffix}.jsonl"
+    checkpoint_path = results_file(f"results{suffix}.jsonl")
     submission, classify_records = run_pipeline(
         inbox, limit=limit, checkpoint_path=checkpoint_path, resume=resume
     )
 
-    output_path = ROOT_DIR / f"output{suffix}.json"
+    output_path = results_file(f"output{suffix}.json")
     output_path.write_text(json.dumps(submission, indent=2))
 
-    cache_path = ROOT_DIR / f"classify_cache{suffix}.json"
+    cache_path = results_file(f"classify_cache{suffix}.json")
     cache_path.write_text(json.dumps(classify_records, indent=2))
 
     return {

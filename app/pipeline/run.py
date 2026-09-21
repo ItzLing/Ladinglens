@@ -10,8 +10,7 @@ from typing import Optional
 from app.llm_client import LLMUnavailableError
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
-from app.pipeline.extract import extract_fields
-from app.pipeline.read_document import read_document
+from app.pipeline.extract import extract_document
 from app.schema import ComparisonResult, EmailCategory, ReviewReason
 
 CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.2
@@ -67,8 +66,8 @@ def process_email(email: dict, inbox) -> ComparisonResult:
     si_path, bl_path = si_candidates[0], bl_candidates[0]
 
     try:
-        si_fields = extract_fields(read_document(inbox, si_path))
-        bl_fields = extract_fields(read_document(inbox, bl_path))
+        si = extract_document(inbox, si_path, "SI")
+        bl = extract_document(inbox, bl_path, "BL")
     except LLMUnavailableError:
         # An API failure says nothing about the document -- keep it out of the
         # unreadable bucket so rate limits don't masquerade as real verdicts.
@@ -88,18 +87,20 @@ def process_email(email: dict, inbox) -> ComparisonResult:
             review_reason=ReviewReason.UNREADABLE,
         )
 
-    si_missing = any(v is None for v in si_fields.model_dump().values())
-    bl_missing = any(v is None for v in bl_fields.model_dump().values())
-    if si_missing or bl_missing:
+    # A field the ladder could not settle is never compared or guessed at: the
+    # email goes to a human, with each field's reason and evidence attached.
+    issues = si.issues + bl.issues
+    if issues:
         return ComparisonResult(
             email_id=email_id,
             category=category,
             confidence=confidence,
             needs_review=True,
             review_reason=ReviewReason.MISSING_VALUE,
+            field_issues=issues,
         )
 
-    mismatches = compare_fields(si_fields, bl_fields)
+    mismatches = compare_fields(si.fields, bl.fields)
     return ComparisonResult(
         email_id=email_id,
         category=category,
@@ -161,13 +162,15 @@ def _load_checkpoint(path) -> tuple[dict, dict]:
 def _record(result) -> dict:
     """Flatten a result into one checkpoint line.
 
-    Carries `mismatches` (the per-field SI/BL values) alongside the submission
-    fields, since to_submission() drops them and the review UI needs them.
+    Carries `mismatches` (the per-field SI/BL values) and `field_issues` (why a
+    field went to review, with its evidence) alongside the submission fields,
+    since to_submission() drops them and the review UI needs them.
     """
     return {
         "email_id": result.email_id,
         "confidence": result.confidence,
         "mismatches": result.mismatches,
+        "field_issues": [issue.model_dump(mode="json") for issue in result.field_issues],
         **result.to_submission(),
     }
 
