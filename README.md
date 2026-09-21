@@ -154,24 +154,58 @@ $env:PYTHONIOENCODING='utf-8'; python data\server\score_cli.py results\output.js
 console can't encode by default. `score_cli.py` locates `ground_truth.json` relative to
 its own path, so it works from any directory.
 
-## Review dashboard
+## The web app
 
-A static page over the latest run -- filterable inbox, and a side-by-side SI vs BL diff
-for each flagged field. See [`web/README.md`](web/README.md) for deployment.
+Start the server and open <http://localhost:8000>:
 
 ```bash
-python web/build_report.py          # regenerate web/report.json after every run
+uvicorn app.main:app
+```
+
+It is plain JavaScript and CSS with no build step, served by the same FastAPI app. The icon
+rail on the left has five tabs:
+
+- **Home**: what the system does, and how many emails need attention.
+- **Parsing**: the email list (**Need attention** or **All emails**) with label chips to
+  filter by (SI request, BL comparison, invoice query, general, spam). Pick an email to see its
+  label, confidence score, a one-line summary, and for a document check all seven fields with
+  the SI beside the BL and what differs highlighted. It only reads; nothing here changes a
+  verdict.
+- **Review** and **Report**: still being designed.
+- **Database**: a read-only view of what is stored (MongoDB collections, or the files).
+
+The small control at the top right shows whether a run is in progress, and can retry the
+emails that failed on the model API, or run the pipeline. Keys: `j` and `k` move through the
+list, `/` searches, `g` then `h`, `p` or `d` jumps to Home, Parsing or Database.
+
+The same page also works **read-only with no server**, from `web/report.json`; that is what
+the Vercel demo is. See [`web/README.md`](web/README.md), and [`web/DESIGN.md`](web/DESIGN.md)
+for the design.
+
+```bash
+python web/build_report.py          # rebuild the demo data from the latest run
 python web/build_report.py --sample # ...or from a limited run (?limit=N)
-cd web && python -m http.server 8777
 ```
 
 ```powershell
 python web\build_report.py
-Set-Location web; python -m http.server 8777
 ```
 
-Then open <http://localhost:8777>. Opening `index.html` off the filesystem will not
-work -- the `fetch` of `report.json` has to be served over http.
+### MongoDB (optional)
+
+Results always go to `results/results.jsonl`, which is what resume reads, so a database
+being down never loses a run. Set these in `.env` and every record is also copied into
+MongoDB, and the web app reads from there:
+
+```
+MONGODB_URI=mongodb+srv://user:password@cluster.example.mongodb.net
+MONGODB_DB=ladinglens
+```
+
+Collections: `results` (one document per email and scope, `full` or `sample`) and `runs` (one
+per run). The Database tab shows both, read-only, and never shows the credentials. Without
+`MONGODB_URI` the app simply uses the files. Note: the MongoDB support is tested against an
+in-memory fake, and has not yet been run against a real server.
 
 ## Plugging in the hackathon dataset
 
@@ -191,9 +225,13 @@ and the scorer, which are organizer-only material. Point the pipeline at it with
 app/
   schema.py            # EmailCategory, ShipmentFields, ComparisonResult
   llm_client.py         # OpenAI-compatible client for JSON-only structured calls
-  main.py                # FastAPI app, POST /run
+  main.py                # FastAPI app: POST /run, /api, and the web UI
+  api.py                 # the read-only /api routes, and retrying one email
+  store.py               # result store: JSONL file always, MongoDB copy when configured
+  paths.py               # where inputs and results live
+  run_state.py           # is a run in progress
   pipeline/
-    classify.py          # stage 1: email -> category (+ confidence)
+    classify.py          # stage 1: email -> category, confidence, one-line summary
     read_document.py      # attachment (txt/pdf/docx/xlsx/image) -> text, or page images
     ocr.py                 # Tesseract OCR, per-word confidence, keyword label lookup
     validate.py            # format / range / placeholder checks on extracted values
@@ -202,10 +240,13 @@ app/
     run.py                  # orchestrator, checkpointing, decides needs_review
 results/                 # everything a run writes (only its README is tracked)
 tests/
-  test_extract_ladder.py  # the ladder, offline (OCR and LLM mocked)
+  test_*.py               # Python tests, offline (OCR, LLM and MongoDB mocked)
+  js/*.test.js            # JavaScript tests for the pure UI modules (node:test)
 web/
-  build_report.py       # joins results/results.jsonl + inbox -> report.json
-  index.html             # static review dashboard (no build step)
+  index.html             # the app shell
+  css/, js/              # plain CSS and ES modules, no build step
+  build_report.py       # builds report.json, the data behind the read-only demo
+  DESIGN.md              # the UI plan and design
 data/
   loader.py             # hackathon dataset loader (Inbox class)
   inbox/                 # one JSON per email
@@ -265,18 +306,23 @@ Scans and vision need a **vision-capable model**. Gemini is; a local `llama3.1` 
 
 ### Tests
 
-The ladder is tested with OCR and both LLM calls mocked, so no API quota or Tesseract is
-needed:
+Everything is tested offline: OCR, the model calls and MongoDB are all mocked, so no API
+quota, Tesseract or database is needed.
 
 ```bash
-python -m unittest discover -s tests
+pip install -r requirements-dev.txt     # once: adds mongomock and httpx
+python -m unittest discover -s tests    # Python
+node --test "tests/js/*.test.js"        # JavaScript (Node 22 or newer, no packages)
 ```
 
 ## Current scope
 
 - `Dockerfile` is not built yet.
-- The OCR confidence threshold (`OCR_MIN_CONFIDENCE`) has not been calibrated against real
-  Tesseract output yet -- Tesseract was not installed when the ladder was built.
-- The dashboard (`web/index.html`) does not display `field_issues` yet; they are in
-  `report.json`.
+- The **Review** and **Report** tabs are waiting on their designs. Until Review exists there
+  is no way to confirm or correct a case in the UI.
+- MongoDB support has only run against an in-memory fake, not a real server.
+- The OCR confidence threshold (`OCR_MIN_CONFIDENCE`) has not been calibrated against degraded
+  scans; the dataset's own scans are clean.
+- The one-line email summary comes from the same model call as the label. Adding it left the
+  category unchanged on all 19 emails compared, but that sample is small.
 - See [`HANDOFF.md`](HANDOFF.md) for the running log of decisions and open questions.
