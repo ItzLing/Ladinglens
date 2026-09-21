@@ -235,7 +235,7 @@ data/data_v2/
 data/server/
 data/docker-compose.yml
 
-# pipeline run artifacts (including *.sample.* from limited runs)
-output*.json
-classify_cache*.json
-results*.jsonl
+# pipeline run results (including *.sample.* from limited runs) all live in results/;
+# only its README is tracked
+results/*
+!results/README.md
