@@ -18,6 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # keeps organizer material out of this image.
 COPY app/ ./app/
 COPY data/loader.py ./data/loader.py
+# app/main.py serves the UI at / -- without this the health check on / fails.
+COPY web/ ./web/
 
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8000

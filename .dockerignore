@@ -1,13 +1,20 @@
 # The dataset and its scorer are organizer-only and must never enter an image.
 data/*
 !data/loader.py
+
+# Run artifacts and caches -- regenerated, and stale copies would mislead.
 results/
 ocr_cache/
-web/
+__pycache__/
+*.pyc
+
+# The web UI ships (app/main.py serves it at /), but its tooling and docs do not.
+web/build_report.py
+web/*.md
+web/__pycache__/
+
 scripts/
 tests/
 .git/
 .env
 .env.*
-__pycache__/
-*.pyc
