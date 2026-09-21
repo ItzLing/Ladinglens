@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
+from app import run_state
 from app.llm_client import LLMUnavailableError, llm_request_context
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
@@ -228,6 +229,7 @@ def run_pipeline(
     checkpoint=None,
     resume: bool = False,
     concurrency: Optional[int] = None,
+    new_only: bool = False,
 ) -> tuple[dict, dict]:
     """Process the inbox, or only its first `limit` emails.
 
@@ -239,6 +241,11 @@ def run_pipeline(
     Returns (submission, classify_records). classify_records pairs each email's
     raw self-reported confidence with its computed verdict, so the confidence
     threshold can be re-swept offline instead of re-spending API quota.
+
+    `resume` skips the emails already finished but retries the ones that failed.
+    `new_only` goes further: it also leaves the failed ones alone, so only emails with
+    no saved result at all are processed. That is what to use after adding emails to
+    the inbox. It implies resume.
     """
     if concurrency is None:
         concurrency = int(os.environ.get("LLM_CONCURRENCY", "8"))
@@ -247,7 +254,11 @@ def run_pipeline(
     if limit is not None:
         emails = emails[:limit]
 
+    resume = resume or new_only
     done, failed = checkpoint.load() if checkpoint is not None and resume else ({}, {})
+    if new_only:
+        done.update(failed)  # a failed email already has a saved result: leave it as it is
+        failed = {}
     if checkpoint is not None and not resume:
         checkpoint.reset()
 
@@ -267,7 +278,9 @@ def run_pipeline(
         if email_id not in done
     ]
 
-    def work(email_id: str, email: dict) -> dict:
+    def work(email_id: str, email: dict) -> Optional[dict]:
+        if run_state.stop_requested():
+            return None  # asked to stop: leave this one for a resume
         if not isinstance(email, Mapping) or email.get("email_id") != email_id:
             invalid_record = TypeError("email record has no valid string email_id")
             _log_stage_failure(
@@ -308,6 +321,8 @@ def run_pipeline(
                         email_id, "batch_boundary", exc, "processing_error"
                     )
                     record = _record(_processing_error(email_id, "batch_boundary"))
+                if record is None:
+                    continue
                 # The scheduled ID is authoritative if a stage returns a wrong one.
                 if record.get("email_id") != email_id:
                     returned_id = ValueError("stage returned a different email_id")
@@ -327,6 +342,8 @@ def run_pipeline(
     submission = {}
     classify_records = {}
     for email_id, _email in email_items:  # restore input order after concurrency
+        if email_id not in done:
+            continue  # only possible when the run was stopped early
         record = done[email_id]
         entry = {key: record[key] for key in SUBMISSION_KEYS}
         submission[email_id] = entry

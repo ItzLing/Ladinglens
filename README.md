@@ -105,14 +105,17 @@ model and half by another. `resume` is off by default for that reason.
 
 ## Polling the inbox on a schedule
 
-`scripts/poll.py` calls `POST /run?resume=true` on an interval. Because resume skips
-emails already in `results.jsonl`, each tick only processes what is new and retries
-whatever previously failed on the API -- a tick that finds nothing new costs no calls.
+`scripts/poll.py` calls `POST /run?new_only=true` on an interval. Each tick processes only
+the emails with no saved result in `results.jsonl` (new arrivals) and leaves everything
+already saved alone, failed ones included -- a tick that finds nothing new costs no calls, and
+an API outage is not retried (and re-billed) every interval. Add `--retry-failed` to have it
+call `resume=true` instead, which also retries the emails that failed on the API.
 
 ```bash
 python scripts/poll.py                 # loop, every 5 minutes
 python scripts/poll.py --interval 120  # every 2 minutes
 python scripts/poll.py --once          # one tick, for Task Scheduler / cron
+python scripts/poll.py --retry-failed  # also retry emails that failed on the API
 ```
 
 ```powershell
@@ -124,7 +127,13 @@ python scripts\poll.py --once
 A full run takes far longer than a polling interval, so `POST /run` refuses a second
 concurrent run with **HTTP 409** rather than letting two runs append to the same
 checkpoint and race on `output.json`. The poller treats 409 as "skip this tick".
-`GET /status` reports whether a run is in progress.
+`GET /status` reports whether a run is in progress. `POST /run?new_only=true` processes only
+emails with no saved result (for example ones added to the inbox since the last run) and
+leaves every saved result, failed ones included, alone. A fresh `POST /run` first copies the
+old results to a timestamped `.bak` file if they hold a real verdict. `POST /api/run/stop` (the Stop button)
+asks the run to stop: emails already being processed finish and are saved, the rest are
+left alone, and `POST /run?resume=true` carries on from the checkpoint. A stopped run does
+not rewrite `output.json`, so a partial run can never replace a full one.
 
 To survive reboots, register the `--once` form with Windows Task Scheduler:
 
@@ -207,6 +216,74 @@ per run). The Database tab shows both, read-only, and never shows the credential
 `MONGODB_URI` the app simply uses the files. Note: the MongoDB support is tested against an
 in-memory fake, and has not yet been run against a real server.
 
+## Exporting to Excel
+
+The operations team works in spreadsheets, so a run can be handed over as one:
+
+```bash
+python scripts/export_excel.py              # -> results/ladinglens.xlsx
+python scripts/export_excel.py --sample     # the ?limit= run instead
+```
+
+```powershell
+python scripts\export_excel.py
+python scripts\export_excel.py --sample
+```
+
+Two sheets, both with frozen headers and autofilters: **Inbox** is one row per email
+(sender, subject, classification, result, why escalated), and **Mismatches** is one row
+per flagged field with the SI and BL values side by side. Mismatch rows are tinted red
+and escalations amber, so the sheet is scanned rather than read.
+
+It reads through the same `app.api.report()` the dashboard uses, so the two can never
+disagree, and it makes **no API calls** -- every value was already decided by the run.
+
+## Simulating an inbox
+
+The dataset is a fixed set of files, so a poller finds nothing new after its first pass.
+To watch the pipeline react to arrivals, drip emails into a staging folder:
+
+```bash
+python scripts/feed_inbox.py --reset               # empty the staging folder
+python scripts/feed_inbox.py --batch 3 --every 60  # 3 every 60s until done
+```
+
+Point the pipeline at it and run the poller alongside:
+
+```bash
+# .env
+INBOX_SOURCE=data/live
+```
+
+Nothing is faked inside the app: the feeder copies real records into `data/live/`, and
+the ordinary `Inbox` loader discovers them the way it would a real mail drop.
+Attachments are copied **before** the email JSON, so the pipeline never sees an email
+whose documents have not landed and bank `missing_attachment` as a verdict.
+
+Point `INBOX_SOURCE` back at the full dataset before scoring -- `score_cli.py` grades
+against all 520 emails, so a partial staging folder reads as a catastrophic regression.
+
+## Deploying
+
+`Dockerfile` builds a container that serves the API and the web UI. It installs
+`tesseract-ocr` and `poppler-utils`, because `pytesseract` is only a wrapper and OCR
+would otherwise fail in the container while working locally.
+
+```bash
+docker build -t ladinglens .
+docker run --rm -p 8000:8000 --env-file .env ladinglens
+```
+
+The dataset is deliberately **not** in the image -- `.dockerignore` excludes `data/*`
+except `loader.py`, so organizer material can never reach a public container. That means
+`POST /run` cannot work there. `POST /process` is the deployed path: it takes the email
+and both documents in the request body and needs nothing on disk.
+
+On Render: New > Web Service, connect the repo, runtime **Docker**, health check `/`.
+Set `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` and `LLM_MAX_TOKENS` in their dashboard,
+and leave `INBOX_SOURCE` unset. Free instances sleep after ~15 minutes idle and take
+~50s to wake, so warm the URL before demoing.
+
 ## Plugging in the hackathon dataset
 
 The bundle lives in [`data/`](data) and is gitignored -- it carries `ground_truth.json`
@@ -238,6 +315,13 @@ app/
     extract.py            # stage 2: the fallback ladder -> ShipmentFields + field issues
     compare.py             # stage 3: SI vs BL -> mismatches (deterministic, no LLM)
     run.py                  # orchestrator, checkpointing, decides needs_review
+scripts/
+  poll.py               # polls /run?new_only=true on an interval
+  recompare.py           # re-applies stage 3 offline, without spending API quota
+  export_excel.py        # a finished run -> .xlsx for the operations team
+  feed_inbox.py          # drips emails into data/live/ to simulate arrivals
+reference/
+  claude-as-llm/         # a worked example: the whole pipeline run with Claude as the model, no API
 results/                 # everything a run writes (only its README is tracked)
 tests/
   test_*.py               # Python tests, offline (OCR, LLM and MongoDB mocked)

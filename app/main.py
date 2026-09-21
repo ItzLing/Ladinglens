@@ -61,6 +61,7 @@ def status():
 def run(
     limit: Optional[int] = Query(None, gt=0, description="Process only the first N emails"),
     resume: bool = Query(False, description="Continue from the checkpoint instead of starting over"),
+    new_only: bool = Query(False, description="Process only emails with no saved result; leave every saved one, failed included, alone"),
 ):
     """Run the pipeline, writing output.json and classify_cache.json into results/.
 
@@ -80,13 +81,13 @@ def run(
     if not run_state.lock.acquire(blocking=False):
         raise HTTPException(status_code=409, detail="a run is already in progress")
     try:
-        return _do_run(limit, resume)
+        return _do_run(limit, resume, new_only)
     finally:
         run_state.end()
         run_state.lock.release()
 
 
-def _do_run(limit: Optional[int], resume: bool) -> dict:
+def _do_run(limit: Optional[int], resume: bool, new_only: bool = False) -> dict:
     inbox = Inbox(inbox_source())
     store = get_store()
 
@@ -94,14 +95,30 @@ def _do_run(limit: Optional[int], resume: bool) -> dict:
     available = len(inbox.emails())
     run_state.begin(scope, available if limit is None else min(limit, available))
 
-    run_id = store.start_run(scope, limit, resume)
+    run_id = store.start_run(scope, limit, resume or new_only)
+    checkpoint = store.checkpoint(scope)
     submission, classify_records = run_pipeline(
-        inbox, limit=limit, checkpoint=store.checkpoint(scope), resume=resume
+        inbox, limit=limit, checkpoint=checkpoint, resume=resume, new_only=new_only
     )
+    backup = checkpoint.last_backup
+    stopped = run_state.stop_requested()
     counts: dict = {}
     for entry in submission.values():
         counts[entry["status"]] = counts.get(entry["status"], 0) + 1
     store.finish_run(run_id, counts)
+
+    if stopped:
+        # Every email finished so far is already in the checkpoint. Writing the
+        # partial submission would replace a full output.json with a fragment, so
+        # leave the outputs alone; resume=true carries on from the checkpoint.
+        return {
+            "stopped": True,
+            "backup_path": str(backup) if backup else None,
+            "emails_processed": len(submission),
+            "checkpoint_path": str(checkpoint_file(scope)),
+            "storage": store.backend,
+            "storage_error": store.error,
+        }
 
     suffix = ".sample" if limit else ""
     output_path = results_file(f"output{suffix}.json")
@@ -111,6 +128,8 @@ def _do_run(limit: Optional[int], resume: bool) -> dict:
     cache_path.write_text(json.dumps(classify_records, indent=2))
 
     return {
+        "stopped": False,
+        "backup_path": str(backup) if backup else None,
         "emails_processed": len(submission),
         "output_path": str(output_path),
         "classify_cache_path": str(cache_path),
@@ -146,7 +165,7 @@ def process(payload: ProcessRequest):
 
     if payload.subject or payload.body:
         try:
-            category, confidence = classify_email(
+            category, confidence, summary = classify_email(
                 {
                     "subject": payload.subject,
                     "from": payload.sender,
@@ -163,6 +182,7 @@ def process(payload: ProcessRequest):
             )
             result["category"] = category.value
             result["confidence"] = confidence
+            result["summary"] = summary
         except (LLMUnavailableError, ValueError, KeyError) as exc:
             raise HTTPException(status_code=502, detail=f"classification failed: {exc}")
 

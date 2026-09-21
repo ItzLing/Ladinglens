@@ -98,12 +98,24 @@ def status():
     return {
         "version": __version__,
         "running": scope is not None,
+        "stopping": scope is not None and run_state.stop_requested(),
         "scope": scope,
         "processed": processed if scope else None,
         "total": run_state.current["total"] if scope else None,
         "storage": store.backend,
         "storage_error": store.error,
     }
+
+
+@router.post("/run/stop")
+def stop_run():
+    """Stop the run in progress after the emails already being processed.
+
+    What has finished is kept, so `resume=true` carries on from there.
+    """
+    if not run_state.request_stop():
+        raise HTTPException(status_code=409, detail="no run is in progress")
+    return {"stopping": True}
 
 
 @router.get("/report")

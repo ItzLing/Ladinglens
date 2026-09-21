@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   caseBanner, createStore, fieldRows, filterRows, groupCounts, isFailed, needsAttention, sortRows, statusChip, tabCounts,
-  escalationNote, nextStep, priorityOf, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
+  delegate, escalationNote, needsPerson, runPlan, nextStep, takeBack, priorityOf, sortByPriority, reportGroups, reportInsights, reportTiles, resultText, rowsToCsv, statusCounts, summaryText,
 } from "../../web/js/store.js";
 import { FIELDS } from "../../web/js/util/format.js";
 
@@ -219,4 +219,56 @@ test("the CSV has a header, quotes every cell, and doubles quotes inside", () =>
   assert.equal(csv[0], '"priority","email_id","subject","from","category","result","confidence","next_step","fields_flagged"');
   assert.equal(csv[1], '"High","e2","Say ""hi"", ok","a@x.com","BL comparison","Mismatch","96%","Ask the documentation team to correct the flagged BL fields.","Consignee, Notify party"');
   assert.equal(rowsToCsv([]).split("\n").length, 1);
+});
+
+test("sorting by priority puts mismatches first, then reviews, then clean checks, and leaves the input alone", () => {
+  const before = ROWS.map((r) => r.email_id);
+  assert.deepEqual(sortByPriority(ROWS).map((r) => r.email_id), ["e2", "e4", "e5", "e1", "e3", "e6"]);
+  assert.deepEqual(ROWS.map((r) => r.email_id), before);
+});
+
+test("delegating hands a case to a named person, tidies the name, and ignores a blank one", () => {
+  const first = delegate({}, "e4", "  Aisha   Rahman ", "2026-09-21T10:00:00Z");
+  assert.deepEqual(first, { e4: { to: "Aisha Rahman", at: "2026-09-21T10:00:00Z" } });
+  const blank = {};
+  assert.equal(delegate(blank, "e4", "   "), blank);
+  assert.equal(delegate(blank, "", "Aisha"), blank);
+  assert.equal(delegate(first, "e4", "x".repeat(200))["e4"].to.length, 80);
+  assert.deepEqual(Object.keys(delegate(first, "e5", "Colt")).sort(), ["e4", "e5"]);
+  assert.deepEqual(first, { e4: { to: "Aisha Rahman", at: "2026-09-21T10:00:00Z" } }, "the old map is not changed");
+});
+
+test("taking a case back removes only that hand-over", () => {
+  const map = { e4: { to: "A", at: "t" }, e5: { to: "B", at: "t" } };
+  assert.deepEqual(takeBack(map, "e4"), { e5: { to: "B", at: "t" } });
+  assert.equal(Object.keys(map).length, 2);
+});
+
+test("a case needs a person when it needs review or failed, and a mismatch does not", () => {
+  assert.deepEqual(ROWS.filter(needsPerson).map((r) => r.email_id), ["e4", "e5"]);
+  assert.equal(needsPerson(row("x", "BL_COMPARISON", "MISMATCH")), false);
+  assert.equal(needsPerson(row("x", "GENERAL", "OK", { review_reason: "processing_error" })), true);
+});
+
+test("the run plan counts what has no saved result and says a fresh run replaces the saved ones", () => {
+  const report = { scope: "full", summary: { total: 268, inbox_total: 520, failed: 268 } };
+  const plan = runPlan(report);
+  assert.deepEqual([plan.saved, plan.left, plan.failed], [268, 252, 268]);
+  assert.match(plan.startOver, /^Start over on 520 emails\? This replaces the 268 saved results \(a backup copy is kept\)/);
+  assert.match(plan.startOver, /use "Run new" instead/);
+});
+
+test("the run plan points at Retry when nothing is new, and stays quiet with nothing to keep", () => {
+  assert.match(runPlan({ scope: "full", summary: { total: 10, inbox_total: 10, failed: 3 } }).startOver, /use "Retry" instead/);
+  assert.doesNotMatch(runPlan({ scope: "full", summary: { total: 10, inbox_total: 10, failed: 0 } }).startOver, /cancel and use/);
+  const none = runPlan({ scope: "full", summary: { total: 0, inbox_total: 520 } });
+  assert.equal(none.startOver, "Run the pipeline on 520 emails? This uses model quota.");
+  assert.equal(none.left, 0);
+});
+
+test("a sample report has no saved full results to replace and no new emails to offer", () => {
+  const plan = runPlan({ scope: "sample", summary: { total: 5, inbox_total: 520, failed: 0 } });
+  assert.deepEqual([plan.saved, plan.left], [0, 0]);
+  assert.match(plan.startOver, /^Run the pipeline on 520 emails/);
+  assert.equal(runPlan(null).left, 0);
 });

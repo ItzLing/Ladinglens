@@ -6,6 +6,7 @@ replace one manual check against a real MongoDB server.
 import json
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -77,6 +78,53 @@ class FileCheckpointTests(TempResults):
         cp.append(failure("a", category="BL_COMPARISON"))
         cp.append(failure("a", category="GENERAL"))
         self.assertEqual(cp.records()["a"]["category"], "BL_COMPARISON")
+
+    def test_a_fresh_start_keeps_a_copy_of_real_results_first(self):
+        cp = self.make()
+        cp.reset()
+        cp.append(record("a"))
+        cp.append(failure("b"))
+        before = cp.path.read_text(encoding="utf-8")
+        cp.reset()  # what a fresh run does
+        self.assertEqual(cp.path.read_text(encoding="utf-8"), "")
+        self.assertIsNotNone(cp.last_backup)
+        self.assertEqual(cp.last_backup.read_text(encoding="utf-8"), before)
+        self.assertTrue(cp.last_backup.name.startswith("results.jsonl."))
+        self.assertTrue(cp.last_backup.name.endswith(".bak"))
+
+    def test_a_file_of_only_failures_or_nothing_is_not_backed_up(self):
+        cp = self.make()
+        cp.reset()  # no file yet, then an empty one
+        self.assertIsNone(cp.last_backup)
+        cp.append(failure("a"))
+        cp.append(failure("b"))
+        cp.reset()
+        self.assertIsNone(cp.last_backup)
+        self.assertEqual(list(cp.path.parent.glob("*.bak")), [])
+
+    def test_a_run_of_failures_never_pushes_out_an_earlier_backup(self):
+        cp = self.make()
+        cp.reset()
+        cp.append(record("a"))
+        cp.reset()
+        good = cp.last_backup
+        cp.append(failure("a"))
+        cp.reset()  # the next fresh run finds only failures
+        self.assertTrue(good.exists())
+        self.assertEqual([p.name for p in cp.path.parent.glob("*.bak")], [good.name])
+
+    def test_two_fresh_starts_in_the_same_second_keep_both_copies(self):
+        cp = self.make()
+        cp.reset()
+        with mock.patch.object(store, "_now", return_value=datetime(2026, 9, 21, 12, 0, 0, tzinfo=timezone.utc)):
+            cp.append(record("a"))
+            cp.reset()
+            first = cp.last_backup
+            cp.append(record("b"))
+            cp.reset()
+            second = cp.last_backup
+        self.assertNotEqual(first, second)
+        self.assertTrue(first.exists() and second.exists())
 
     def test_a_missing_file_is_just_empty(self):
         self.assertEqual(self.make().records(), {})

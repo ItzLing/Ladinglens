@@ -11,6 +11,7 @@ set, every record is also copied into MongoDB, and the API reads from there.
 """
 import json
 import os
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -59,8 +60,30 @@ class FileCheckpoint:
 
     def __init__(self, path: Path):
         self.path = path
+        self.last_backup: Optional[Path] = None  # set by reset() when it kept a copy
+
+    def backup(self) -> Optional[Path]:
+        """Copy the file aside, but only if it holds at least one real verdict.
+
+        A fresh run replaces the file. A file of nothing but failures (an API outage)
+        is not worth keeping, and must not push out an earlier backup that is.
+        """
+        if not self.path.exists():
+            return None
+        done, _failed = self.load()
+        if not done:
+            return None
+        stamp = _now().strftime("%Y%m%dT%H%M%SZ")
+        target = self.path.with_name(f"{self.path.name}.{stamp}.bak")
+        n = 1
+        while target.exists():  # two fresh runs in the same second must not overwrite each other
+            target = self.path.with_name(f"{self.path.name}.{stamp}-{n}.bak")
+            n += 1
+        shutil.copy2(self.path, target)
+        return target
 
     def reset(self) -> None:
+        self.last_backup = self.backup()
         self.path.write_text("", encoding="utf-8")
 
     def append(self, record: dict) -> None:
@@ -138,6 +161,10 @@ class Checkpoint:
             action(*args)
         except PyMongoError as exc:
             self.on_error(exc)
+
+    @property
+    def last_backup(self) -> Optional[Path]:
+        return self.file.last_backup
 
     def reset(self) -> None:
         self.file.reset()

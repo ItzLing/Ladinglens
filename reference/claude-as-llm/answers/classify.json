@@ -1,0 +1,2602 @@
+{
+ "email_001": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_002": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250075931 is included or billed separately."
+ },
+ "email_003": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN832764835 to be sent for checking; nothing is attached."
+ },
+ "email_004": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_005": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_006": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for PSGSE9638346 to be sent for checking; nothing is attached."
+ },
+ "email_007": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-37631, loading at SINGAPORE and discharging at GDANSK, POLAND."
+ },
+ "email_008": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-26773, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at MERSIN, TURKEY."
+ },
+ "email_009": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_010": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250071354 is included or billed separately."
+ },
+ "email_011": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_012": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel MMSS 2507 V.257087E berthed on schedule."
+ },
+ "email_013": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_014": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-60883, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at CONAKRY, GUINEA."
+ },
+ "email_015": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about a full mailbox asking the reader to verify their account."
+ },
+ "email_016": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500236763 to be sent for checking; nothing is attached."
+ },
+ "email_017": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for MSDUL0942527743 and asks to confirm the amount before payment."
+ },
+ "email_018": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2576036 to be sent for checking; nothing is attached."
+ },
+ "email_019": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-72046, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at MERSIN, TURKEY."
+ },
+ "email_020": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-45299, loading at NHAVA SHEVA, INDIA and discharging at BUSAN, SOUTH KOREA."
+ },
+ "email_021": {
+  "category": "GENERAL",
+  "confidence": 0.7,
+  "summary": "Reminds everyone to submit SI and AED for all pending shipments by end of day."
+ },
+ "email_022": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-52735, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at PYEONGTAEK, SOUTH KOREA."
+ },
+ "email_023": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-88568, loading at BUATAN, INDONESIA and discharging at KARACHI, PAKISTAN."
+ },
+ "email_024": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250070084 and asks for it to be posted."
+ },
+ "email_025": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_026": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Marketing spam offering 90% off a logistics automation suite."
+ },
+ "email_027": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-48877, loading at NHAVA SHEVA, INDIA and discharging at HOUSTON, US."
+ },
+ "email_028": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-12567, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at KOPER, SLOVENIA."
+ },
+ "email_029": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-24771, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at CALLAO, PERU."
+ },
+ "email_030": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-63982, loading at SINGAPORE and discharging at NEW YORK, US."
+ },
+ "email_031": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_032": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_033": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-69379, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at YANGON, MYANMAR."
+ },
+ "email_034": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_035": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-58842, loading at NANTONG, CHINA and discharging at NEW YORK, US."
+ },
+ "email_036": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN513709859 to be sent for checking; nothing is attached."
+ },
+ "email_037": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for VISION 202 V.002: loading completed, documents to follow."
+ },
+ "email_038": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2535290 to be sent for checking; nothing is attached."
+ },
+ "email_039": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-70076, loading at BUATAN, INDONESIA and discharging at CEBU, PHILIPPINES."
+ },
+ "email_040": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_041": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for SIJ5165604 and asks to confirm the amount before payment."
+ },
+ "email_042": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-02296, loading at NHAVA SHEVA, INDIA and discharging at BRISBANE, AUSTRALIA."
+ },
+ "email_043": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_044": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_045": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for ONEYSINF75161 and asks to confirm the amount before payment."
+ },
+ "email_046": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_047": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN867980793 to be sent for checking; nothing is attached."
+ },
+ "email_048": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for I515186449 and asks to confirm the amount before payment."
+ },
+ "email_049": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN733221418 to be sent for checking; nothing is attached."
+ },
+ "email_050": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN597746886 to be sent for checking; nothing is attached."
+ },
+ "email_051": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_052": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_053": {
+  "category": "GENERAL",
+  "confidence": 0.95,
+  "summary": "Sends New Year greetings and says the office resumes normal operations on 2 January."
+ },
+ "email_054": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-45054, loading at NHAVA SHEVA, INDIA and discharging at MERSIN, TURKEY."
+ },
+ "email_055": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_056": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_057": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5SUS-88442, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at NEW YORK, US."
+ },
+ "email_058": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_059": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_060": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250076940 is included or billed separately."
+ },
+ "email_061": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500262636 to be sent for checking; nothing is attached."
+ },
+ "email_062": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250076524 is included or billed separately."
+ },
+ "email_063": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ3308330 to be sent for checking; nothing is attached."
+ },
+ "email_064": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_065": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_066": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2514593 to be sent for checking; nothing is attached."
+ },
+ "email_067": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-71870, loading at NHAVA SHEVA, INDIA and discharging at KARACHI, PAKISTAN."
+ },
+ "email_068": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_069": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250073119 and asks for it to be posted."
+ },
+ "email_070": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel MARCOPOLO 810 V.BS005 berthed on schedule."
+ },
+ "email_071": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_072": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_073": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-96423, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at SAVANNAH, US."
+ },
+ "email_074": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250070387 is included or billed separately."
+ },
+ "email_075": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for MARCOPOLO 810 V.BS005 completed; no action needed."
+ },
+ "email_076": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_077": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942529396 to be sent for checking; nothing is attached."
+ },
+ "email_078": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250075110 is included or billed separately."
+ },
+ "email_079": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-61839, loading at SINGAPORE and discharging at HOUSTON, US."
+ },
+ "email_080": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500212406 to be sent for checking; nothing is attached."
+ },
+ "email_081": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I939828073 to be sent for checking; nothing is attached."
+ },
+ "email_082": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_083": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel SOLID 16 V.044NW2 berthed on schedule."
+ },
+ "email_084": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-96603, loading at SINGAPORE and discharging at SAVANNAH, US."
+ },
+ "email_085": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250071252 is included or billed separately."
+ },
+ "email_086": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_087": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250070745 and asks for it to be posted."
+ },
+ "email_088": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I982544948 to be sent for checking; nothing is attached."
+ },
+ "email_089": {
+  "category": "GENERAL",
+  "confidence": 0.7,
+  "summary": "Reminds everyone to submit SI and AED for all pending shipments by end of day."
+ },
+ "email_090": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_091": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_092": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I341389994 to be sent for checking; nothing is attached."
+ },
+ "email_093": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-30068, loading at BUATAN, INDONESIA and discharging at KOPER, SLOVENIA."
+ },
+ "email_094": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-99042, loading at NHAVA SHEVA, INDIA and discharging at MOMBASA, KENYA."
+ },
+ "email_095": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for ONEYSINF49177 to be sent for checking; nothing is attached."
+ },
+ "email_096": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_097": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_098": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for LE HAVRE V.QI540A completed; no action needed."
+ },
+ "email_099": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250072135 is included or billed separately."
+ },
+ "email_100": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ0032365 to be sent for checking; nothing is attached."
+ },
+ "email_101": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RVN-72099, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at YANGON, MYANMAR."
+ },
+ "email_102": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250070593 and asks for it to be posted."
+ },
+ "email_103": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-59929, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at YANGON, MYANMAR."
+ },
+ "email_104": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250075691 is included or billed separately."
+ },
+ "email_105": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500296902 to be sent for checking; nothing is attached."
+ },
+ "email_106": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-61793, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at KARACHI, PAKISTAN."
+ },
+ "email_107": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_108": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250075652 and reverse the PGI because the booking was amended."
+ },
+ "email_109": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for ONEYSINF80686 to be sent for checking; nothing is attached."
+ },
+ "email_110": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-51168, loading at SINGAPORE and discharging at MOMBASA, KENYA."
+ },
+ "email_111": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_112": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250078508 is included or billed separately."
+ },
+ "email_113": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_114": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942580072 to be sent for checking; nothing is attached."
+ },
+ "email_115": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250073283 and asks for it to be posted."
+ },
+ "email_116": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about an unpaid customs fee for an undelivered package."
+ },
+ "email_117": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for MMSS 2507 V.257087E completed; no action needed."
+ },
+ "email_118": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_119": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_120": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-30461, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at JEBEL ALI, UAE."
+ },
+ "email_121": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_122": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-10022, loading at NHAVA SHEVA, INDIA and discharging at CALLAO, PERU."
+ },
+ "email_123": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_124": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-28900, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at YANGON, MYANMAR."
+ },
+ "email_125": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-51701, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at HOUSTON, US."
+ },
+ "email_126": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_127": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-98270, loading at NHAVA SHEVA, INDIA and discharging at VALPARAISO, CHILE."
+ },
+ "email_128": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_129": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_130": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-84066, loading at BUATAN, INDONESIA and discharging at LONG BEACH, US."
+ },
+ "email_131": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-64842, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at AQABA, JORDAN."
+ },
+ "email_132": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_133": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_134": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about an unpaid customs fee for an undelivered package."
+ },
+ "email_135": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-47660, loading at NANTONG, CHINA and discharging at CALLAO, PERU."
+ },
+ "email_136": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 14353682 to be sent for checking; nothing is attached."
+ },
+ "email_137": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-92995, loading at NHAVA SHEVA, INDIA and discharging at GDANSK, POLAND."
+ },
+ "email_138": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-80996, loading at NANTONG, CHINA and discharging at MOMBASA, KENYA."
+ },
+ "email_139": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250075037 is included or billed separately."
+ },
+ "email_140": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about a full mailbox asking the reader to verify their account."
+ },
+ "email_141": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for ONEYSINF13651 to be sent for checking; nothing is attached."
+ },
+ "email_142": {
+  "category": "GENERAL",
+  "confidence": 0.95,
+  "summary": "Sends New Year greetings and says the office resumes normal operations on 2 January."
+ },
+ "email_143": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_144": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_145": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_146": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_147": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_148": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-84518, loading at SINGAPORE and discharging at KARACHI, PAKISTAN."
+ },
+ "email_149": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-04341, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at BRISBANE, AUSTRALIA."
+ },
+ "email_150": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Marketing spam offering 90% off a logistics automation suite."
+ },
+ "email_151": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-62718, loading at NHAVA SHEVA, INDIA and discharging at HOUSTON, US."
+ },
+ "email_152": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 63655647 to be sent for checking; nothing is attached."
+ },
+ "email_153": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for SOLID 16 V.044NW2: loading completed, documents to follow."
+ },
+ "email_154": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AKR-16947, loading at SINGAPORE and discharging at PYEONGTAEK, SOUTH KOREA."
+ },
+ "email_155": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250071780 is included or billed separately."
+ },
+ "email_156": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about a full mailbox asking the reader to verify their account."
+ },
+ "email_157": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-08254, loading at NANTONG, CHINA and discharging at PYEONGTAEK, SOUTH KOREA."
+ },
+ "email_158": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942526634 to be sent for checking; nothing is attached."
+ },
+ "email_159": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_160": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_161": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 05281273 to be sent for checking; nothing is attached."
+ },
+ "email_162": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-70862, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at TUTICORIN, INDIA."
+ },
+ "email_163": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-10967, loading at NANTONG, CHINA and discharging at MERSIN, TURKEY."
+ },
+ "email_164": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-13811, loading at BUATAN, INDONESIA and discharging at MOMBASA, KENYA."
+ },
+ "email_165": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for SIN852897558 and asks to confirm the amount before payment."
+ },
+ "email_166": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-88899, loading at NANTONG, CHINA and discharging at KOPER, SLOVENIA."
+ },
+ "email_167": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_168": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-64622, loading at BUATAN, INDONESIA and discharging at BALTIMORE, US."
+ },
+ "email_169": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250075535 and asks for it to be posted."
+ },
+ "email_170": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250078338 and asks for it to be posted."
+ },
+ "email_171": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_172": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AKR-55543, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at YANGON, MYANMAR."
+ },
+ "email_173": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_174": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_175": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_176": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN860868034 to be sent for checking; nothing is attached."
+ },
+ "email_177": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-11751, loading at NANTONG, CHINA and discharging at CONAKRY, GUINEA."
+ },
+ "email_178": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_179": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250076224 and asks for it to be posted."
+ },
+ "email_180": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Marketing spam offering 90% off a logistics automation suite."
+ },
+ "email_181": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-30107, loading at NANTONG, CHINA and discharging at ASHDOD, ISRAEL."
+ },
+ "email_182": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_183": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-29962, loading at BUATAN, INDONESIA and discharging at TUTICORIN, INDIA."
+ },
+ "email_184": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Marketing spam offering 90% off a logistics automation suite."
+ },
+ "email_185": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for MARCOPOLO 810 V.BS005: loading completed, documents to follow."
+ },
+ "email_186": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I495870207 to be sent for checking; nothing is attached."
+ },
+ "email_187": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I733294562 to be sent for checking; nothing is attached."
+ },
+ "email_188": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Marketing spam offering 90% off a logistics automation suite."
+ },
+ "email_189": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942561919 to be sent for checking; nothing is attached."
+ },
+ "email_190": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942551909 to be sent for checking; nothing is attached."
+ },
+ "email_191": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250072762 and reverse the PGI because the booking was amended."
+ },
+ "email_192": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RVN-38468, loading at NANTONG, CHINA and discharging at KLAIPEDA, LITHUANIA."
+ },
+ "email_193": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-94905, loading at NHAVA SHEVA, INDIA and discharging at VALPARAISO, CHILE."
+ },
+ "email_194": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for MMSS 2507 V.257087E completed; no action needed."
+ },
+ "email_195": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 05129276 to be sent for checking; nothing is attached."
+ },
+ "email_196": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5SUS-69454, loading at NHAVA SHEVA, INDIA and discharging at HOUSTON, US."
+ },
+ "email_197": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_198": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_199": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2594707 to be sent for checking; nothing is attached."
+ },
+ "email_200": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_201": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-05061, loading at NANTONG, CHINA and discharging at CONAKRY, GUINEA."
+ },
+ "email_202": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-93136, loading at NHAVA SHEVA, INDIA and discharging at KARACHI, PAKISTAN."
+ },
+ "email_203": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250077100 and asks for it to be posted."
+ },
+ "email_204": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_205": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5SUS-70108, loading at NANTONG, CHINA and discharging at KARACHI, PAKISTAN."
+ },
+ "email_206": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_207": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500292983 to be sent for checking; nothing is attached."
+ },
+ "email_208": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_209": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-54729, loading at NHAVA SHEVA, INDIA and discharging at HOCHIMINH CITY, VIETNAM."
+ },
+ "email_210": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2552578 to be sent for checking; nothing is attached."
+ },
+ "email_211": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250077515 and asks for it to be posted."
+ },
+ "email_212": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250070455 is included or billed separately."
+ },
+ "email_213": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel NAP 914 V.BS007 berthed on schedule."
+ },
+ "email_214": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-44714, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at YANGON, MYANMAR."
+ },
+ "email_215": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Scam claiming an iPhone prize and asking for a shipping fee."
+ },
+ "email_216": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250073389 and asks for it to be posted."
+ },
+ "email_217": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5SUS-22342, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at KLAIPEDA, LITHUANIA."
+ },
+ "email_218": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for MARCOPOLO 810 V.BS005: loading completed, documents to follow."
+ },
+ "email_219": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for VISION 202 V.002 completed; no action needed."
+ },
+ "email_220": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2557164 to be sent for checking; nothing is attached."
+ },
+ "email_221": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-39613, loading at SINGAPORE and discharging at HOUSTON, US."
+ },
+ "email_222": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Marketing spam offering 90% off a logistics automation suite."
+ },
+ "email_223": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ0061675 to be sent for checking; nothing is attached."
+ },
+ "email_224": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for MCLSINJEA2580647 and asks to confirm the amount before payment."
+ },
+ "email_225": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_226": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Advance-fee scam asking the reader for bank details."
+ },
+ "email_227": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_228": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-49363, loading at NANTONG, CHINA and discharging at YANGON, MYANMAR."
+ },
+ "email_229": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 00159416 to be sent for checking; nothing is attached."
+ },
+ "email_230": {
+  "category": "GENERAL",
+  "confidence": 0.7,
+  "summary": "Reminds everyone to submit SI and AED for all pending shipments by end of day."
+ },
+ "email_231": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_232": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for MMSS 2507 V.257087E completed; no action needed."
+ },
+ "email_233": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-89317, loading at NHAVA SHEVA, INDIA and discharging at MERSIN, TURKEY."
+ },
+ "email_234": {
+  "category": "GENERAL",
+  "confidence": 0.7,
+  "summary": "Reminds everyone to submit SI and AED for all pending shipments by end of day."
+ },
+ "email_235": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_236": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250074564 and reverse the PGI because the booking was amended."
+ },
+ "email_237": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for ONEYSINF20742 to be sent for checking; nothing is attached."
+ },
+ "email_238": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_239": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_240": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-16592, loading at BUATAN, INDONESIA and discharging at BRISBANE, AUSTRALIA."
+ },
+ "email_241": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel MARCOPOLO 810 V.BS005 berthed on schedule."
+ },
+ "email_242": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN459779452 to be sent for checking; nothing is attached."
+ },
+ "email_243": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_244": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-40767, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at MERSIN, TURKEY."
+ },
+ "email_245": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-39597, loading at NANTONG, CHINA and discharging at NEW YORK, US."
+ },
+ "email_246": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RVN-05452, loading at SINGAPORE and discharging at AQABA, JORDAN."
+ },
+ "email_247": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2591077 to be sent for checking; nothing is attached."
+ },
+ "email_248": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_249": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_250": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500256288 to be sent for checking; nothing is attached."
+ },
+ "email_251": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AKR-89354, loading at NANTONG, CHINA and discharging at KLAIPEDA, LITHUANIA."
+ },
+ "email_252": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for MMSS 2507 V.257087E completed; no action needed."
+ },
+ "email_253": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_254": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_255": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_256": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_257": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-93788, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at JEBEL ALI, UAE."
+ },
+ "email_258": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for MMSS 2507 V.257087E: loading completed, documents to follow."
+ },
+ "email_259": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for PSGSE0289141 to be sent for checking; nothing is attached."
+ },
+ "email_260": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-80715, loading at NHAVA SHEVA, INDIA and discharging at GDANSK, POLAND."
+ },
+ "email_261": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I750479303 to be sent for checking; nothing is attached."
+ },
+ "email_262": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250071877 and asks for it to be posted."
+ },
+ "email_263": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I133254110 to be sent for checking; nothing is attached."
+ },
+ "email_264": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-11080, loading at BUATAN, INDONESIA and discharging at YANGON, MYANMAR."
+ },
+ "email_265": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 31109193 to be sent for checking; nothing is attached."
+ },
+ "email_266": {
+  "category": "GENERAL",
+  "confidence": 0.7,
+  "summary": "Reminds everyone to submit SI and AED for all pending shipments by end of day."
+ },
+ "email_267": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_268": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for ONEYSINF50033 and asks to confirm the amount before payment."
+ },
+ "email_269": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250078655 and reverse the PGI because the booking was amended."
+ },
+ "email_270": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_271": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ3466925 to be sent for checking; nothing is attached."
+ },
+ "email_272": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250071115 and asks for it to be posted."
+ },
+ "email_273": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_274": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250075802 and reverse the PGI because the booking was amended."
+ },
+ "email_275": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_276": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-29160, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at BALTIMORE, US."
+ },
+ "email_277": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-76563, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at FREMANTLE, AUSTRALIA."
+ },
+ "email_278": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-04275, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at CEBU, PHILIPPINES."
+ },
+ "email_279": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-12206, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at KLAIPEDA, LITHUANIA."
+ },
+ "email_280": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250070136 and reverse the PGI because the booking was amended."
+ },
+ "email_281": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 09976838 to be sent for checking; nothing is attached."
+ },
+ "email_282": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I508640355 to be sent for checking; nothing is attached."
+ },
+ "email_283": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-29344, loading at BUATAN, INDONESIA and discharging at KOPER, SLOVENIA."
+ },
+ "email_284": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250074689 and asks for it to be posted."
+ },
+ "email_285": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250078750 and asks for it to be posted."
+ },
+ "email_286": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250072644 is included or billed separately."
+ },
+ "email_287": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250077281 is included or billed separately."
+ },
+ "email_288": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for ONEYSINF14150 to be sent for checking; nothing is attached."
+ },
+ "email_289": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-51076, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at HOCHIMINH CITY, VIETNAM."
+ },
+ "email_290": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-16493, loading at NANTONG, CHINA and discharging at CONAKRY, GUINEA."
+ },
+ "email_291": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_292": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ1952569 to be sent for checking; nothing is attached."
+ },
+ "email_293": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-97374, loading at NANTONG, CHINA and discharging at GDANSK, POLAND."
+ },
+ "email_294": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_295": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-01367, loading at NANTONG, CHINA and discharging at LONG BEACH, US."
+ },
+ "email_296": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_297": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for VISION 202 V.002 completed; no action needed."
+ },
+ "email_298": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250070303 and reverse the PGI because the booking was amended."
+ },
+ "email_299": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN671462831 to be sent for checking; nothing is attached."
+ },
+ "email_300": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_301": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 24082226 to be sent for checking; nothing is attached."
+ },
+ "email_302": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_303": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250071538 and asks for it to be posted."
+ },
+ "email_304": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250076731 and asks for it to be posted."
+ },
+ "email_305": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 17722560 to be sent for checking; nothing is attached."
+ },
+ "email_306": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-56906, loading at NHAVA SHEVA, INDIA and discharging at ASHDOD, ISRAEL."
+ },
+ "email_307": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_308": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-00053, loading at SINGAPORE and discharging at APAPA, NIGERIA."
+ },
+ "email_309": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2589534 to be sent for checking; nothing is attached."
+ },
+ "email_310": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-68802, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at BALTIMORE, US."
+ },
+ "email_311": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AKR-88443, loading at BUATAN, INDONESIA and discharging at BRISBANE, AUSTRALIA."
+ },
+ "email_312": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_313": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_314": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250076771 and asks for it to be posted."
+ },
+ "email_315": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Scam claiming an iPhone prize and asking for a shipping fee."
+ },
+ "email_316": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250076501 is included or billed separately."
+ },
+ "email_317": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RCY-76570, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at APAPA, NIGERIA."
+ },
+ "email_318": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for ONEYSINF18623 to be sent for checking; nothing is attached."
+ },
+ "email_319": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ0342811 to be sent for checking; nothing is attached."
+ },
+ "email_320": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-20967, loading at BUATAN, INDONESIA and discharging at HOUSTON, US."
+ },
+ "email_321": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2559606 to be sent for checking; nothing is attached."
+ },
+ "email_322": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-97054, loading at BUATAN, INDONESIA and discharging at CALLAO, PERU."
+ },
+ "email_323": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for SOLID 16 V.044NW2 completed; no action needed."
+ },
+ "email_324": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_325": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for PACIFIC SUN 1 V.251073E: loading completed, documents to follow."
+ },
+ "email_326": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 07279103 to be sent for checking; nothing is attached."
+ },
+ "email_327": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-28664, loading at BUATAN, INDONESIA and discharging at BALTIMORE, US."
+ },
+ "email_328": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for NAP 914 V.BS007: loading completed, documents to follow."
+ },
+ "email_329": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about an unpaid customs fee for an undelivered package."
+ },
+ "email_330": {
+  "category": "GENERAL",
+  "confidence": 0.95,
+  "summary": "Sends New Year greetings and says the office resumes normal operations on 2 January."
+ },
+ "email_331": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for MSDUL0942512091 and asks to confirm the amount before payment."
+ },
+ "email_332": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_333": {
+  "category": "GENERAL",
+  "confidence": 0.95,
+  "summary": "Sends New Year greetings and says the office resumes normal operations on 2 January."
+ },
+ "email_334": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_335": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_336": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-72959, loading at NHAVA SHEVA, INDIA and discharging at BRISBANE, AUSTRALIA."
+ },
+ "email_337": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for PSGSE5561857 to be sent for checking; nothing is attached."
+ },
+ "email_338": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RVN-22971, loading at SINGAPORE and discharging at CONAKRY, GUINEA."
+ },
+ "email_339": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-03037, loading at BUATAN, INDONESIA and discharging at MERSIN, TURKEY."
+ },
+ "email_340": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for MARCOPOLO 810 V.BS005 completed; no action needed."
+ },
+ "email_341": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ6326868 to be sent for checking; nothing is attached."
+ },
+ "email_342": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_343": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for PSGSE7207650 to be sent for checking; nothing is attached."
+ },
+ "email_344": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-05458, loading at NHAVA SHEVA, INDIA and discharging at CEBU, PHILIPPINES."
+ },
+ "email_345": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Advance-fee scam asking the reader for bank details."
+ },
+ "email_346": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for LE HAVRE V.QI540A: loading completed, documents to follow."
+ },
+ "email_347": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the update summary for PACIFIC SUN 1 V.251073E: loading completed, documents to follow."
+ },
+ "email_348": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_349": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_350": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN793110291 to be sent for checking; nothing is attached."
+ },
+ "email_351": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_352": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-70336, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at YANGON, MYANMAR."
+ },
+ "email_353": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-67320, loading at NHAVA SHEVA, INDIA and discharging at PYEONGTAEK, SOUTH KOREA."
+ },
+ "email_354": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_355": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for MSDUL0942510287 and asks to confirm the amount before payment."
+ },
+ "email_356": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel INDO SUKSES 65 V.51NW1 berthed on schedule."
+ },
+ "email_357": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-98986, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at PYEONGTAEK, SOUTH KOREA."
+ },
+ "email_358": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-57937, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at CONAKRY, GUINEA."
+ },
+ "email_359": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-21648, loading at BUATAN, INDONESIA and discharging at HOUSTON, US."
+ },
+ "email_360": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-01576, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at KOPER, SLOVENIA."
+ },
+ "email_361": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_362": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-38820, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at HOCHIMINH CITY, VIETNAM."
+ },
+ "email_363": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Advance-fee scam asking the reader for bank details."
+ },
+ "email_364": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_365": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Scam claiming an iPhone prize and asking for a shipping fee."
+ },
+ "email_366": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_367": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_368": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-00892, loading at SINGAPORE and discharging at MOMBASA, KENYA."
+ },
+ "email_369": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for MSDUL0942561368 and asks to confirm the amount before payment."
+ },
+ "email_370": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-26978, loading at NANTONG, CHINA and discharging at CEBU, PHILIPPINES."
+ },
+ "email_371": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-16202, loading at NHAVA SHEVA, INDIA and discharging at CALLAO, PERU."
+ },
+ "email_372": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for SIN859592248 and asks to confirm the amount before payment."
+ },
+ "email_373": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for I510979215 and asks to confirm the amount before payment."
+ },
+ "email_374": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for I896599949 and asks to confirm the amount before payment."
+ },
+ "email_375": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250078193 is included or billed separately."
+ },
+ "email_376": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AKR-20375, loading at NHAVA SHEVA, INDIA and discharging at LONG BEACH, US."
+ },
+ "email_377": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_378": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_379": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_380": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RVN-75955, loading at BUATAN, INDONESIA and discharging at HOUSTON, US."
+ },
+ "email_381": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2543740 to be sent for checking; nothing is attached."
+ },
+ "email_382": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Advance-fee scam asking the reader for bank details."
+ },
+ "email_383": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_384": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942525178 to be sent for checking; nothing is attached."
+ },
+ "email_385": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500209961 to be sent for checking; nothing is attached."
+ },
+ "email_386": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250076604 and asks for it to be posted."
+ },
+ "email_387": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about an unpaid customs fee for an undelivered package."
+ },
+ "email_388": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-08632, loading at NANTONG, CHINA and discharging at KARACHI, PAKISTAN."
+ },
+ "email_389": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for PSGSE8154660 and asks to confirm the amount before payment."
+ },
+ "email_390": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Advance-fee scam asking the reader for bank details."
+ },
+ "email_391": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_392": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about a full mailbox asking the reader to verify their account."
+ },
+ "email_393": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RVN-36774, loading at SINGAPORE and discharging at CEBU, PHILIPPINES."
+ },
+ "email_394": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for LE HAVRE V.QI540A completed; no action needed."
+ },
+ "email_395": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_396": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for LE HAVRE V.QI540A completed; no action needed."
+ },
+ "email_397": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-22840, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at APAPA, NIGERIA."
+ },
+ "email_398": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_399": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for INDO SUKSES 65 V.51NW1 completed; no action needed."
+ },
+ "email_400": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AAT-84131, loading at SINGAPORE and discharging at HOCHIMINH CITY, VIETNAM."
+ },
+ "email_401": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942517318 to be sent for checking; nothing is attached."
+ },
+ "email_402": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250078772 is included or billed separately."
+ },
+ "email_403": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250075879 and reverse the PGI because the booking was amended."
+ },
+ "email_404": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about an unpaid customs fee for an undelivered package."
+ },
+ "email_405": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_406": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250073257 and reverse the PGI because the booking was amended."
+ },
+ "email_407": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_408": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_409": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_410": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_411": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_412": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250075742 and asks for it to be posted."
+ },
+ "email_413": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-63475, loading at BUATAN, INDONESIA and discharging at HOCHIMINH CITY, VIETNAM."
+ },
+ "email_414": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel MARCOPOLO 810 V.BS005 berthed on schedule."
+ },
+ "email_415": {
+  "category": "GENERAL",
+  "confidence": 0.95,
+  "summary": "Sends New Year greetings and says the office resumes normal operations on 2 January."
+ },
+ "email_416": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_417": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Advance-fee scam asking the reader for bank details."
+ },
+ "email_418": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel LE HAVRE V.QI540A berthed on schedule."
+ },
+ "email_419": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2571840 to be sent for checking; nothing is attached."
+ },
+ "email_420": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250071441 is included or billed separately."
+ },
+ "email_421": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ8153523 to be sent for checking; nothing is attached."
+ },
+ "email_422": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250075879 and asks for it to be posted."
+ },
+ "email_423": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2500463 to be sent for checking; nothing is attached."
+ },
+ "email_424": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 03526356 to be sent for checking; nothing is attached."
+ },
+ "email_425": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250078449 and reverse the PGI because the booking was amended."
+ },
+ "email_426": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_427": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5ALT-71398, loading at NANTONG, CHINA and discharging at KLAIPEDA, LITHUANIA."
+ },
+ "email_428": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_429": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-83625, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at PYEONGTAEK, SOUTH KOREA."
+ },
+ "email_430": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-43627, loading at NHAVA SHEVA, INDIA and discharging at CONAKRY, GUINEA."
+ },
+ "email_431": {
+  "category": "GENERAL",
+  "confidence": 0.7,
+  "summary": "Reminds everyone to submit SI and AED for all pending shipments by end of day."
+ },
+ "email_432": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN775244182 to be sent for checking; nothing is attached."
+ },
+ "email_433": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-79551, loading at BUATAN, INDONESIA and discharging at LONG BEACH, US."
+ },
+ "email_434": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_435": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_436": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for I733055978 to be sent for checking; nothing is attached."
+ },
+ "email_437": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5AKR-27682, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at KARACHI, PAKISTAN."
+ },
+ "email_438": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5SUS-59045, loading at NANTONG, CHINA and discharging at APAPA, NIGERIA."
+ },
+ "email_439": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for I768086628 and asks to confirm the amount before payment."
+ },
+ "email_440": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for ONEYSINF47068 to be sent for checking; nothing is attached."
+ },
+ "email_441": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for NAP 914 V.BS007 completed; no action needed."
+ },
+ "email_442": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for PSGSE5703943 to be sent for checking; nothing is attached."
+ },
+ "email_443": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-47692, loading at NANTONG, CHINA and discharging at HOUSTON, US."
+ },
+ "email_444": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2572011 to be sent for checking; nothing is attached."
+ },
+ "email_445": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel NAP 914 V.BS007 berthed on schedule."
+ },
+ "email_446": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 65754278 to be sent for checking; nothing is attached."
+ },
+ "email_447": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2561880 to be sent for checking; nothing is attached."
+ },
+ "email_448": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500214364 to be sent for checking; nothing is attached."
+ },
+ "email_449": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Phishing message about an unpaid customs fee for an undelivered package."
+ },
+ "email_450": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Prize-draw scam asking the reader to claim a gift card through a link."
+ },
+ "email_451": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIN680491872 to be sent for checking; nothing is attached."
+ },
+ "email_452": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250078581 and asks for it to be posted."
+ },
+ "email_453": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_454": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for 070500242537 to be sent for checking; nothing is attached."
+ },
+ "email_455": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Advance-fee scam asking the reader for bank details."
+ },
+ "email_456": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942506181 to be sent for checking; nothing is attached."
+ },
+ "email_457": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Scam claiming an iPhone prize and asking for a shipping fee."
+ },
+ "email_458": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for ONEYSINF35885 and asks to confirm the amount before payment."
+ },
+ "email_459": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ4168601 to be sent for checking; nothing is attached."
+ },
+ "email_460": {
+  "category": "GENERAL",
+  "confidence": 0.7,
+  "summary": "Reminds everyone to submit SI and AED for all pending shipments by end of day."
+ },
+ "email_461": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250079947 is included or billed separately."
+ },
+ "email_462": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_463": {
+  "category": "GENERAL",
+  "confidence": 0.9,
+  "summary": "Automated notice that the India HSS SD billing process for MARCOPOLO 810 V.BS005 completed; no action needed."
+ },
+ "email_464": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Daily berthing report: vessel NAP 914 V.BS007 berthed on schedule."
+ },
+ "email_465": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for SIJ8472426 to be sent for checking; nothing is attached."
+ },
+ "email_466": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-30524, loading at NHAVA SHEVA, INDIA and discharging at BRISBANE, AUSTRALIA."
+ },
+ "email_467": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-87688, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at HOUSTON, US."
+ },
+ "email_468": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_469": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RAE-21450, loading at SINGAPORE and discharging at KOPER, SLOVENIA."
+ },
+ "email_470": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Marketing spam offering 90% off a logistics automation suite."
+ },
+ "email_471": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for 74223196 and asks to confirm the amount before payment."
+ },
+ "email_472": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250075829 and reverse the PGI because the booking was amended."
+ },
+ "email_473": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Sends detention charges for I283337218 and asks to confirm the amount before payment."
+ },
+ "email_474": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_475": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5APH-09109, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at KLAIPEDA, LITHUANIA."
+ },
+ "email_476": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942581793 to be sent for checking; nothing is attached."
+ },
+ "email_477": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RMY-76618, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at APAPA, NIGERIA."
+ },
+ "email_478": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-92024, loading at PORT KLANG (WESTPORT), MALAYSIA and discharging at MOMBASA, KENYA."
+ },
+ "email_479": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_480": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942567993 to be sent for checking; nothing is attached."
+ },
+ "email_481": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_482": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for PSGSE2632514 to be sent for checking; nothing is attached."
+ },
+ "email_483": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_484": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RSG-76553, loading at SINGAPORE and discharging at APAPA, NIGERIA."
+ },
+ "email_485": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RFR-34864, loading at RUGAO/NANTONG/SHANGHAI, CHINA and discharging at CALLAO, PERU."
+ },
+ "email_486": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MSDUL0942504521 to be sent for checking; nothing is attached."
+ },
+ "email_487": {
+  "category": "SI_REQUEST",
+  "confidence": 0.85,
+  "summary": "Sends the shipping instruction for 5RUS-40211, loading at NANTONG, CHINA and discharging at VALPARAISO, CHILE."
+ },
+ "email_488": {
+  "category": "GENERAL",
+  "confidence": 0.92,
+  "summary": "Sends the list of outstanding BLs and asks for the pending items to be actioned."
+ },
+ "email_489": {
+  "category": "SPAM",
+  "confidence": 0.99,
+  "summary": "Scam claiming an iPhone prize and asking for a shipping fee."
+ },
+ "email_490": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Says the goods receipt is still missing for invoice 5250076684 and asks for it to be posted."
+ },
+ "email_491": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_492": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250075841 is included or billed separately."
+ },
+ "email_493": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for MCLSINJEA2578020 to be sent for checking; nothing is attached."
+ },
+ "email_494": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_495": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.6,
+  "summary": "Asks for the draft BL for PSGSE0409614 to be sent for checking; nothing is attached."
+ },
+ "email_496": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_497": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.96,
+  "summary": "Asks whether the THC or local charge on invoice 5250076025 is included or billed separately."
+ },
+ "email_498": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_499": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.98,
+  "summary": "Asks for the attached shipping instruction and draft bill of lading to be checked against each other."
+ },
+ "email_500": {
+  "category": "INVOICE_QUERY",
+  "confidence": 0.95,
+  "summary": "Asks to cancel invoice 5250078299 and reverse the PGI because the booking was amended."
+ },
+ "email_501": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Sends the SI with a commercial invoice and asks to confirm the BL; no draft BL is attached."
+ },
+ "email_502": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Sends the SI with a packing list and asks to confirm the BL; no draft BL is attached."
+ },
+ "email_503": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Sends the SI with a certificate of origin and asks to confirm the BL; no draft BL is attached."
+ },
+ "email_504": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Sends the SI with a packing list and asks to confirm the BL; no draft BL is attached."
+ },
+ "email_505": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Sends the SI with a certificate of origin and asks to confirm the BL; no draft BL is attached."
+ },
+ "email_506": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Asks to compare the SI and draft BL, but the attachments appear to have been dropped."
+ },
+ "email_507": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Asks to compare the SI and draft BL, but says the draft BL is still missing."
+ },
+ "email_508": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Asks to compare the SI and draft BL, but the attachments appear to have been dropped."
+ },
+ "email_509": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Asks to compare the SI and draft BL, but says the draft BL is still missing."
+ },
+ "email_510": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.9,
+  "summary": "Asks to compare the SI and draft BL, but the attachments appear to have been dropped."
+ },
+ "email_511": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Sends the SI and a draft BL file that will not open, and asks for advice."
+ },
+ "email_512": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Sends scanned image-only copies of the SI and draft BL for checking."
+ },
+ "email_513": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Sends scanned image-only copies of the SI and draft BL for checking."
+ },
+ "email_514": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Sends scanned image-only copies of the SI and draft BL for checking."
+ },
+ "email_515": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Sends the SI and a draft BL file that will not open, and asks for advice."
+ },
+ "email_516": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Asks to compare the SI and draft BL although the customer left some SI fields blank."
+ },
+ "email_517": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Asks to compare the SI and draft BL although the customer left some SI fields blank."
+ },
+ "email_518": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Asks to compare the SI and draft BL although the customer left some SI fields blank."
+ },
+ "email_519": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Asks to compare the SI and draft BL although the customer left some SI fields blank."
+ },
+ "email_520": {
+  "category": "BL_COMPARISON",
+  "confidence": 0.95,
+  "summary": "Asks to compare the SI and draft BL although the customer left some SI fields blank."
+ }
+}

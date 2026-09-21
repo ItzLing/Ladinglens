@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ladinglens</title>
+  <script>
+    // Apply the saved theme before the first paint so a dark page never flashes light.
+    try { var t = localStorage.getItem("ladinglens-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">

@@ -162,7 +162,8 @@ UI falls back to showing only the differing fields for them.
 | `GET /api/status` | Running or idle, progress, failed count, app version, storage backend |
 | `GET /api/db/status` | Backend, connected or not, database name, collection counts (credentials never shown) |
 | `GET /api/db/collections/{name}` | Read-only page of documents, filterable by `email_id`, limit capped |
-| `POST /run` | Existing. "Retry failed" calls it with `resume=true` |
+| `POST /run` | Existing. "Retry" calls it with `resume=true`; "Run N new" with `new_only=true` (only emails with no saved result, everything saved left alone); "Start over" with neither, which first keeps a `.bak` copy of the old results |
+| `POST /api/run/stop` | Stop the run in progress after the emails already being processed; 409 when nothing is running. What finished is kept, so `resume=true` carries on. `/api/status` shows `stopping` meanwhile |
 
 The existing `/run` and `/status` stay, since `scripts/poll.py` uses them. Collection names are
 checked against a whitelist. Nothing writes through the database endpoints.
@@ -188,8 +189,15 @@ append-only, overlaid on the model output.
   Icons only, so each has an accessible name and a tooltip. The current tab is highlighted.
   Review opens a short "Design in progress" page for now.
 - **Header:** "Ladinglens" as the title. On the right, a **small** run control: a status dot
-  with "Idle" or "212 of 520", an icon button for **Retry failed (n)**, and a menu for **Run**
-  (which asks for confirmation because it spends model quota). It is deliberately compact: the
+  with "Idle" or "212 of 520", a **Stop** button while a run is going (it says "Stopping…" until
+  the emails in flight finish), **Run N new** for the emails with no saved result yet (new
+  ones added to the inbox, or ones a stopped run did not reach), **Retry N** for the failed
+  ones, and **Start over**. Start over confirms in plain words that it replaces the saved
+  results (a backup copy is kept) and spends model quota.
+  **Retry N** re-runs every failed email. To re-run just one, use the **Retry** button on that
+  email: on its row in the Home queue (failed rows only, shown when the queue is filtered to
+  Needs review), or "Retry this email" in its Parsing or Review detail. A retry that fails again
+  says so beside the button instead of only announcing it. It is deliberately compact: the
   owner will confirm with a friend what it should do.
 - Under 800 px the rail becomes a bottom bar and the two panes stack, with a Back control.
 - Routes: `#/` Home, `#/parsing`, `#/parsing/{id}`, `#/review`, `#/report`, `#/data`.
@@ -260,6 +268,18 @@ The rail shows it and it opens a "Design in progress" page. Nothing further is b
 owner's draft arrives. The earlier idea (a Review workspace with an evidence panel and form) is
 kept only as a suggestion for that draft.
 
+Parsing and Review share one scaffold, `components/casepane.js`: the two panes, opening an email,
+loading its case, `j` / `k`, the original email and documents, and the Retry button. Each view keeps
+only its own part (Parsing its filters and field table, Review its queue rules, corrections and
+delegation) and links to the other tab for the same email. What counts as "needs a person" is one
+rule, `needsPerson` in `store.js`, used by Review's queue, the Parsing link and the Home queue.
+
+**Delegation (demo).** Every case in the queue has a "Delegate this case" box: type a name,
+press **Send to {name}**, and the case moves to a **Delegated** tab with a "Delegated to {name}"
+chip. **Take back** returns it. Nothing is sent anywhere; the hand-over is kept in the browser
+(`localStorage`, key `ladinglens-review-delegations-v1`). It is a stand-in until a real
+notification exists. It was asked for by Colt.
+
 ### 6.6 Tab 4: Report
 
 The old single-page dashboard, moved into the app and widened to fill the screen, with the ideas
@@ -283,8 +303,17 @@ from ZuYenn's redesign added. From the top:
 
 It reads the same report as Home and Parsing, so it works in the live app and in the demo.
 
-Home also shows ZuYenn's four-step route (Classify, Extract, Compare, Review) and the three
-outcome cards (primary user, business value, decision rule).
+Home is ZuYenn's dashboard ("Shipping operations console"): the hero with the four-step route
+(Classify, Extract, Compare, Review), five headline tiles, the Inbox mix, and a searchable
+review queue. A queue row opens the email in Parsing, or in Review when it needs a person.
+
+### 6.7 Theme
+
+Light and dark share one set of tokens (`tokens.css`); nothing in the views sets its own colours.
+The button at the bottom of the rail switches between them, follows the system theme until the
+reader chooses, and remembers the choice (`localStorage`, key `ladinglens-theme`). A small inline
+script in `index.html` applies the saved theme before the first paint, so a dark page never
+flashes light.
 
 ## 7. Shared design
 
@@ -353,7 +382,7 @@ web/
   js/views/data.js      tab 5
   js/views/report.js    the Report tab: numbers, chart, emails folded by label
   js/views/soon.js      "Design in progress" for Review
-  js/components/        rail.js, runbar.js, fields.js, chips.js
+  js/components/        rail.js, runbar.js, fields.js, chips.js, casepane.js
   js/util/              diff.js (word diff), format.js, dom.js
   report.json           static demo data (kept, tracked)
   DESIGN.md             this file

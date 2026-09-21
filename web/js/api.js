@@ -35,8 +35,9 @@ function liveApi(fetchFn) {
     caseFor: (id, scope = "auto") => get(`api/emails/${enc(id)}?scope=${enc(scope)}`),
     pageUrl: (id, role, page) => `api/emails/${enc(id)}/documents/${enc(role)}/pages/${page}.png`,
     retry: (id, scope = "auto") => post(`api/emails/${enc(id)}/retry?scope=${enc(scope)}`),
-    run: ({ limit = null, resume = false } = {}) =>
-      post(`run?resume=${resume}${limit ? `&limit=${limit}` : ""}`),
+    run: ({ limit = null, resume = false, newOnly = false } = {}) =>
+      post(`run?resume=${resume}${newOnly ? "&new_only=true" : ""}${limit ? `&limit=${limit}` : ""}`),
+    stop: () => post("api/run/stop"),
     dbStatus: () => get("api/db/status"),
     dbDocs: (name, { emailId = "", limit = 25, skip = 0 } = {}) =>
       get(`api/db/collections/${enc(name)}?limit=${limit}&skip=${skip}${emailId ? `&email_id=${enc(emailId)}` : ""}`),
@@ -63,6 +64,7 @@ function staticApi(fetchFn) {
     pageUrl: () => null,
     retry: readOnly,
     run: readOnly,
+    stop: readOnly,
     dbStatus: async () => ({ backend: "static", configured: false, connected: false, collections: [], error: null }),
     dbDocs: readOnly,
   };

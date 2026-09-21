@@ -1,11 +1,9 @@
 import { h, clear } from "../util/dom.js";
-import { formatTime, plural } from "../util/format.js";
+import { CATEGORY_ORDER, categoryLabel, formatConfidence, formatTime } from "../util/format.js";
+import { PRIORITY_LABEL, isFailed, needsPerson, nextStep, priorityOf, sortByPriority } from "../store.js";
 import { routeHash } from "../router.js";
-
-const FEATURES = [
-  { name: "OCR", text: "Reads scanned pages and reports how sure it is about every word." },
-  { name: "LLM", text: "Classifies emails and maps differently labelled fields." },
-];
+import { labelChip, statusChipEl } from "../components/chips.js";
+import { retryButton } from "../components/casepane.js";
 
 const STEPS = [
   ["01", "Classify", "Sort inbox messages by intent."],
@@ -14,51 +12,217 @@ const STEPS = [
   ["04", "Review", "Escalate uncertain cases with evidence."],
 ];
 
-const OUTCOMES = [
-  ["Primary user", "Shipping operations team"],
-  ["Business value", "Less manual checking, fewer BL corrections"],
-  ["Decision rule", "Escalate when unsure; never guess"],
+const STATUS_OPTIONS = [
+  ["", "All results"],
+  ["MISMATCH", "Mismatch"],
+  ["NEEDS_REVIEW", "Needs review"],
+  ["OK", "No mismatch"],
 ];
 
-export function mountHome(root, { getReport, api }) {
-  const attention = h("p", { class: "attention" });
+function statCards(summary = {}) {
+  return [
+    ["Emails processed", summary.total ?? 0, "whole inbox"],
+    ["Comparison requests", summary.categories?.BL_COMPARISON ?? 0, "routed to document checking"],
+    ["Mismatches found", summary.defects ?? 0, "fields needing correction"],
+    ["Human review", summary.statuses?.NEEDS_REVIEW ?? 0, "uncertain or failed cases"],
+    ["Clean checks", summary.statuses?.OK ?? 0, "no mismatch detected"],
+  ];
+}
 
-  const page = h(
-    "div",
-    { class: "page" },
-    h("hr", { class: "rule", style: "margin-top:0" }),
-    h("h2", {}, "Features"),
-    h("div", { class: "features" }, FEATURES.map((f) => h("div", { class: "feature" }, h("strong", {}, f.name), h("span", {}, f.text)))),
-    h("hr", { class: "rule" }),
-    h("h2", {}, "How it works"),
-    h("p", { class: "secondary" }, "Business users see which emails need attention, which documents already match, and exactly what must be fixed before the draft Bill of Lading is finalized."),
-    h("div", { class: "route", "aria-label": "Processing route" }, STEPS.map(([n, name, text]) => h("div", { class: "route-step" }, h("span", { class: "step-num" }, n), h("strong", {}, name), h("span", {}, text)))),
-    h("div", { class: "outcomes", "aria-label": "Business outcomes" }, OUTCOMES.map(([label, text]) => h("div", { class: "outcome" }, h("span", {}, label), h("strong", {}, text)))),
-    h("hr", { class: "rule" }),
-    h(
-      "div",
-      { class: "tagline" },
-      h("p", {}, "Quick, reliable email verification."),
-      h("p", {}, "Classify, extract data & compare."),
-      h("p", {}, "All around help, every day, every time."),
-    ),
-    attention,
+function hasEmailData(report) {
+  return (report?.emails ?? []).length > 0;
+}
+
+function statusMatches(row, status) {
+  if (!status) return true;
+  return row.status === status;
+}
+
+function categoryMatches(row, category) {
+  if (!category) return true;
+  return row.category === category;
+}
+
+function queryMatches(row, query) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return [
+    row.email_id,
+    row.subject,
+    row.from,
+    row.summary,
+    row.defect_fields?.join(" "),
+  ].some((value) => String(value ?? "").toLowerCase().includes(needle));
+}
+
+function filteredRows(rows, filters) {
+  return sortByPriority(rows.filter((row) =>
+    categoryMatches(row, filters.category) &&
+    statusMatches(row, filters.status) &&
+    queryMatches(row, filters.q)));
+}
+
+function categoryBars(summary = {}) {
+  const categories = summary.categories ?? {};
+  const total = Math.max(1, Object.values(categories).reduce((sum, value) => sum + Number(value ?? 0), 0));
+  const rows = CATEGORY_ORDER.filter((category) => categories[category] || categories[category] === 0);
+  if (!rows.length) return h("div", { class: "home-empty" }, "No category data yet.");
+  return h("div", { class: "mix-bars" },
+    rows.map((category) => {
+      const value = categories[category] ?? 0;
+      return h("div", { class: "mix-row" },
+        h("div", { class: "mix-label" }, categoryLabel(category)),
+        h("div", { class: "mix-track" }, h("span", { style: `width:${Math.round((value / total) * 100)}%` })),
+        h("div", { class: "mix-value" }, value));
+    }));
+}
+
+/** `retry(row)` gives the Retry control for a failed row, or null when there is none. */
+function queueRows(rows, retry) {
+  if (!rows.length) {
+    return h("tbody", {}, h("tr", {}, h("td", { colspan: "8", class: "home-table-empty" }, "No emails match these filters.")));
+  }
+  return h("tbody", {},
+    rows.slice(0, 12).map((row) => {
+      const target = needsPerson(row) ? "review" : "parsing";
+      return (
+      h("tr", {},
+        h("td", {}, h("span", { class: `priority ${priorityOf(row)}` }, PRIORITY_LABEL[priorityOf(row)])),
+        h("td", {}, h("a", { class: "mono", href: routeHash(target, row.email_id) }, row.email_id)),
+        h("td", { class: "home-subject" }, h("a", { href: routeHash(target, row.email_id) }, row.subject || "(no subject)")),
+        h("td", {}, labelChip(row.category)),
+        h("td", {}, statusChipEl(row) ?? h("span", { class: "chip ok" }, "OK")),
+        h("td", {}, formatConfidence(row.confidence)),
+        isFailed(row) && retry(row)
+          ? h("td", { class: "home-next" }, retry(row))
+          : h("td", { class: "home-next", title: nextStep(row) }, nextStep(row)),
+        h("td", { class: "home-flagged" }, (row.defect_fields ?? []).join(", ") || "-"),
+      ));
+    }),
   );
-  clear(root).append(page);
+}
+
+function option(value, label, selected) {
+  return h("option", { value, selected: selected ? true : null }, label);
+}
+
+export function mountHome(root, ctx) {
+  const { getReport, api } = ctx;
+  // a failed row gets its own Retry, which re-runs that one email; the demo is read-only
+  const retryFor = (row) => (api.mode === "static" ? null : retryButton(row, { api, ctx }, { label: "Retry", small: true }));
+  const filters = { q: "", category: "", status: "" };
+  const shell = h("div", { class: "page wide home-dashboard" });
+  clear(root).append(shell);
+
+  function setFilter(patch) {
+    Object.assign(filters, patch);
+    render();
+  }
+
+  function renderHero(report) {
+    const summary = report?.summary ?? {};
+    return h("section", { class: "home-hero-grid" },
+      h("div", { class: "home-hero card" },
+        h("p", { class: "home-eyebrow" }, "Shipping operations console"),
+        h("h2", {}, "Find the emails that matter, then prove every document difference."),
+        h("p", { class: "home-copy" }, "Every message is classified first. Only document comparison requests move into field extraction, mismatch checking, and human review when the system cannot decide confidently."),
+        h("div", { class: "home-steps" }, STEPS.map(([num, title, text]) =>
+          h("div", { class: "home-step" }, h("span", {}, num), h("strong", {}, title), h("p", {}, text)))),
+      ),
+      h("aside", { class: "home-stats" }, statCards(summary).map(([label, value, note]) =>
+        h("div", { class: "home-stat card" }, h("span", {}, label), h("strong", {}, value), h("p", {}, note)))),
+    );
+  }
+
+  function renderMix(report) {
+    const generated = formatTime(report?.generated_at);
+    return h("aside", { class: "home-mix card" },
+      h("div", { class: "home-card-head" },
+        h("div", {}, h("h2", {}, "Inbox mix"), h("p", {}, "Classification count by email category."))),
+      categoryBars(report?.summary),
+      hasEmailData(report)
+        ? h("p", { class: "home-note" }, api.mode === "static" ? `Demo data generated ${generated}.` : `Run generated ${generated}.`)
+        : h("div", { class: "home-warn" }, "This report currently has no emails. Run the pipeline, rebuild web/report.json, then refresh this page to see the review queue."));
+  }
+
+  function renderToolbar(report) {
+    const categories = report?.summary?.categories ?? {};
+    const statusCounts = report?.summary?.statuses ?? {};
+    const total = report?.summary?.total ?? 0;
+    return h("div", { class: "home-tools" },
+      h("input", {
+        class: "search",
+        type: "search",
+        placeholder: "Search subject, sender, email ID or flagged field",
+        value: filters.q,
+        "aria-label": "Search dashboard emails",
+        oninput: (event) => setFilter({ q: event.target.value }),
+      }),
+      h("select", {
+        class: "select",
+        value: filters.category,
+        "aria-label": "Filter by category",
+        onchange: (event) => setFilter({ category: event.target.value }),
+      },
+        option("", "All categories", filters.category === ""),
+        CATEGORY_ORDER.map((category) => option(category, `${categoryLabel(category)} (${categories[category] ?? 0})`, filters.category === category))),
+      h("select", {
+        class: "select",
+        value: filters.status,
+        "aria-label": "Filter by result",
+        onchange: (event) => setFilter({ status: event.target.value }),
+      },
+        STATUS_OPTIONS.map(([value, label]) => option(value, value ? `${label} (${statusCounts[value] ?? 0})` : `${label} (${total})`, filters.status === value))),
+    );
+  }
+
+  function renderQuickFilters(report) {
+    const summary = report?.summary ?? {};
+    const buttons = [
+      ["", "All", summary.total ?? 0],
+      ["MISMATCH", "Mismatch", summary.statuses?.MISMATCH ?? 0],
+      ["NEEDS_REVIEW", "Needs review", summary.statuses?.NEEDS_REVIEW ?? 0],
+      ["OK", "No mismatch", summary.statuses?.OK ?? 0],
+    ];
+    return h("div", { class: "home-pills" }, buttons.map(([status, label, count]) =>
+      h("button", { class: "group", type: "button", "aria-pressed": String(filters.status === status), onclick: () => setFilter({ status }) },
+        `${label} `, h("span", { class: "n" }, count))));
+  }
+
+  function renderQueue(report) {
+    const rows = filteredRows(report?.emails ?? [], filters);
+    const total = report?.emails?.length ?? 0;
+    return h("section", { class: "home-queue card" },
+      h("div", { class: "home-card-head" },
+        h("div", {}, h("h2", {}, "Review queue"), h("p", {}, "Prioritised by what a person must do: fix mismatches first, then review uncertain cases, then archive clean checks.")),
+        h("span", { class: "home-count" }, `${rows.length} of ${total} emails`)),
+      h("div", { class: "home-table-wrap" },
+        h("table", { class: "home-table" },
+          h("thead", {}, h("tr", {},
+            h("th", {}, "Priority"),
+            h("th", {}, "Email"),
+            h("th", {}, "Subject"),
+            h("th", {}, "Category"),
+            h("th", {}, "Result"),
+            h("th", {}, "Confidence"),
+            h("th", {}, "Next step"),
+            h("th", {}, "Fields flagged"))),
+          queueRows(rows, retryFor))));
+  }
 
   function render() {
     const report = getReport();
-    clear(attention);
-    if (!report) return;
-    const n = report.summary?.needs_attention ?? 0;
-    if (api.mode === "static") {
-      attention.append(`Demo data, generated ${formatTime(report.generated_at)}. `, h("a", { href: routeHash("parsing") }, "Open the list"));
-    } else if (n > 0) {
-      attention.append(h("strong", {}, plural(n, "email needs", "emails need")), " attention. ", h("a", { href: routeHash("parsing") }, "Open the list"));
-    } else {
-      attention.append("Nothing needs attention. ", h("a", { href: routeHash("parsing") }, "Open the list"));
-    }
+    clear(shell).append(
+      renderHero(report),
+      h("section", { class: "home-lower" },
+        renderMix(report),
+        h("div", { class: "home-work" },
+          renderToolbar(report),
+          renderQuickFilters(report),
+          renderQueue(report))),
+    );
   }
+
   render();
   return { refresh: render };
 }

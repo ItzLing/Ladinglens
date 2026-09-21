@@ -10,6 +10,11 @@ export function needsAttention(row) {
   return row.status === "MISMATCH" || row.status === "NEEDS_REVIEW";
 }
 
+/** A case only a person can settle: it needs review, or it failed on the model API. Review's queue is exactly these. */
+export function needsPerson(row) {
+  return row.status === "NEEDS_REVIEW" || isFailed(row);
+}
+
 /** What to show as a row's status, or null when the label says it all. */
 export function statusChip(row) {
   if (isFailed(row)) return { kind: "failed", icon: "refresh", text: "Failed. Retry" };
@@ -103,6 +108,11 @@ export function nextStep(row) {
   }[row.category] ?? "No document check needed.";
 }
 
+/** Mismatches first, then reviews, then clean checks; by ID within each. Does not change the array it is given. */
+export function sortByPriority(rows) {
+  return [...rows].sort((a, b) => PRIORITY_RANK[priorityOf(a)] - PRIORITY_RANK[priorityOf(b)] || a.email_id.localeCompare(b.email_id));
+}
+
 /** The result as one plain phrase, for the CSV and the summary. */
 export function resultText(row) {
   if (isFailed(row)) return REASON.processing_error;
@@ -187,15 +197,50 @@ export function statusCounts(rows, { q = "" } = {}) {
   return counts;
 }
 
+/**
+ * Hand a case to a named person. Demo only: nothing is sent, the map is what the page keeps.
+ * A blank name changes nothing. Returns a new map.
+ */
+export function delegate(map, emailId, name, now = new Date().toISOString()) {
+  const to = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (!emailId || !to) return map;
+  return { ...map, [emailId]: { to, at: now } };
+}
+
+/** Take a case back from whoever it was handed to. Returns a new map. */
+export function takeBack(map, emailId) {
+  const next = { ...map };
+  delete next[emailId];
+  return next;
+}
+
+/**
+ * What the run bar can offer, from the report on screen.
+ * `left` is the emails with no saved result yet: new ones added to the inbox, or ones a stopped
+ * run never reached. `startOver` is the wording of the confirmation for a fresh run, which
+ * replaces the saved results, so it has to say so.
+ */
+export function runPlan(report) {
+  const s = report?.summary ?? {};
+  const full = report?.scope === "full";
+  const saved = full ? s.total ?? 0 : 0;
+  const inbox = s.inbox_total ?? s.total ?? 0;
+  const left = full && saved > 0 ? Math.max(0, inbox - saved) : 0;
+  const failed = s.failed ?? 0;
+  const keep = left > 0 ? ' To keep them, cancel and use "Run new" instead.' : failed > 0 ? ' To keep the good ones, cancel and use "Retry" instead.' : "";
+  const startOver = saved > 0
+    ? `Start over on ${inbox} emails? This replaces the ${saved} saved results (a backup copy is kept) and uses model quota.${keep}`
+    : `Run the pipeline on ${inbox || "all"} emails? This uses model quota.`;
+  return { saved, left, failed, startOver };
+}
+
 /** Emails grouped by label for the folded Report list, in label order, empty groups left out. */
 export function reportGroups(rows, { status = "", q = "" } = {}, order = []) {
   const pool = rows.filter((r) => (!status || r.status === status) && matchesQuery(r, q));
   const labels = [...order, ...new Set(pool.map((r) => r.category).filter((c) => !order.includes(c)))];
   return labels
     .map((category) => {
-      const items = pool
-        .filter((r) => r.category === category)
-        .sort((a, b) => PRIORITY_RANK[priorityOf(a)] - PRIORITY_RANK[priorityOf(b)] || a.email_id.localeCompare(b.email_id));
+      const items = sortByPriority(pool.filter((r) => r.category === category));
       return {
         category,
         items,
