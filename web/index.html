@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ladinglens — SI/BL discrepancy review</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f4f2;
+    --surface-1: #fcfcfb;
+    --surface-2: #eceae5;
+    --border:    #dedbd4;
+    --border-strong: #c6c2b8;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #7a7873;
+    --series-1: #2a78d6;
+    --track:    #e4e2dc;
+    --good:     #0ca30c;
+    --warning:  #fab219;
+    --critical: #d03b3b;
+    --good-ink:     #076b07;
+    --warning-ink:  #7a5200;
+    --critical-ink: #a32c2c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #121211;
+      --surface-1: #1a1a19;
+      --surface-2: #232322;
+      --border:    #333330;
+      --border-strong: #4a4a46;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #94938b;
+      --series-1: #3987e5;
+      --track:    #2c2c2a;
+      --good-ink:     #4cc64c;
+      --warning-ink:  #fab219;
+      --critical-ink: #ef7b7b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --surface-2: #232322;
+    --border:    #333330;
+    --border-strong: #4a4a46;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #94938b;
+    --series-1: #3987e5;
+    --track:    #2c2c2a;
+    --good-ink:     #4cc64c;
+    --warning-ink:  #fab219;
+    --critical-ink: #ef7b7b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px; padding-left: 20px; padding-right: 20px; }
+
+  header.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 26px; }
+  h1 { margin: 0; font-size: 21px; letter-spacing: -0.01em; }
+  .sub { margin: 5px 0 0; color: var(--text-secondary); font-size: 13px; max-width: 62ch; }
+  .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  button.ghost {
+    background: var(--surface-1); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  button.ghost:hover { border-color: var(--border-strong); color: var(--text-primary); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 11px; padding: 15px 16px; }
+  .tile .label { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.055em; }
+  .tile .value { font-size: 29px; font-weight: 640; letter-spacing: -0.02em; margin-top: 7px; font-variant-numeric: tabular-nums; }
+  .tile .note { color: var(--text-muted); font-size: 12px; margin-top: 3px; }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 11px; padding: 18px; margin-bottom: 22px; }
+  .panel h2 { margin: 0 0 3px; font-size: 14px; }
+  .panel .cap { margin: 0 0 15px; color: var(--text-secondary); font-size: 12.5px; }
+
+  .bars { display: grid; gap: 9px; }
+  .bar-row { display: grid; grid-template-columns: 132px 1fr 46px; gap: 11px; align-items: center; }
+  .bar-name { color: var(--text-secondary); font-size: 12.5px; }
+  .bar-track { background: var(--track); border-radius: 4px; height: 13px; overflow: hidden; }
+  .bar-fill { background: var(--series-1); height: 100%; border-radius: 0 4px 4px 0; }
+  .bar-val { text-align: right; font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  select, input[type="search"] {
+    background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 13px;
+  }
+  input[type="search"] { flex: 1 1 220px; min-width: 0; }
+  select:focus-visible, input:focus-visible, button:focus-visible, tr:focus-visible {
+    outline: 2px solid var(--series-1); outline-offset: 1px;
+  }
+  .count { color: var(--text-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-1); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; background: var(--surface-2); }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  td.subj { min-width: 260px; }
+  .flag { color: var(--text-muted); font-size: 12px; }
+
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; white-space: nowrap; border: 1px solid var(--border-strong); color: var(--text-secondary); }
+  .chip.ok       { color: var(--good-ink); border-color: var(--good); }
+  .chip.mismatch { color: var(--critical-ink); border-color: var(--critical); }
+  .chip.review   { color: var(--warning-ink); border-color: var(--warning); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .dot.ok { background: var(--good); } .dot.mismatch { background: var(--critical); } .dot.review { background: var(--warning); }
+
+  dialog {
+    border: 1px solid var(--border); border-radius: 13px; background: var(--surface-1); color: var(--text-primary);
+    padding: 0; width: min(880px, calc(100vw - 32px)); max-height: 86vh; overflow: auto;
+  }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  .dlg-head { position: sticky; top: 0; background: var(--surface-1); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; }
+  .dlg-body { padding: 18px 20px 24px; }
+  .dlg-title { font-size: 15px; font-weight: 640; margin: 0 0 4px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; font-size: 13px; margin-bottom: 20px; }
+  .kv dt { color: var(--text-secondary); } .kv dd { margin: 0; }
+  h3.sec { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin: 22px 0 9px; }
+  .diff { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+  .diff th, .diff td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .diff td.f { color: var(--text-secondary); white-space: nowrap; }
+  .diff td.v { white-space: pre-wrap; word-break: break-word; }
+  .diff tr:last-child td { border-bottom: none; }
+  .docs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 720px) { .docs { grid-template-columns: 1fr; } .bar-row { grid-template-columns: 96px 1fr 40px; } }
+  pre.doc { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 12px; overflow: auto; max-height: 300px; font-size: 11.5px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-break: break-word; }
+  .empty { padding: 34px 16px; text-align: center; color: var(--text-muted); }
+  .banner { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: 8px; padding: 11px 14px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 22px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Ladinglens</h1>
+      <p class="sub">Shipping Instruction vs. draft Bill of Lading discrepancy review. Every inbox email is classified; comparison requests have seven shipment fields extracted from both documents and diffed.</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="meta" id="stamp"></span>
+      <button class="ghost" id="theme" type="button">Theme</button>
+    </div>
+  </header>
+
+  <div id="app" hidden>
+    <div class="tiles" id="tiles"></div>
+    <div class="banner" id="banner" hidden></div>
+
+    <section class="panel">
+      <h2>Emails by category</h2>
+      <p class="cap">Count of inbox emails per classification. Only comparison requests continue to document checking.</p>
+      <div class="bars" id="bars"></div>
+    </section>
+
+    <div class="controls">
+      <select id="f-cat" aria-label="Filter by category"><option value="">All categories</option></select>
+      <select id="f-status" aria-label="Filter by status"><option value="">All statuses</option></select>
+      <input type="search" id="f-q" placeholder="Search subject, sender or email ID…" aria-label="Search">
+      <span class="count" id="count"></span>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Email</th><th>Subject</th><th>Category</th><th>Result</th><th>Fields flagged</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden>No emails match these filters.</div>
+    </div>
+  </div>
+
+  <div class="empty" id="loading">Loading report…</div>
+</div>
+
+<dialog id="dlg">
+  <div class="dlg-head">
+    <div><p class="dlg-title" id="d-subject"></p><span class="meta" id="d-id"></span></div>
+    <button class="ghost" id="d-close" type="button">Close</button>
+  </div>
+  <div class="dlg-body" id="d-body"></div>
+</dialog>
+
+<script>
+const LABEL = { BL_COMPARISON:"Comparison request", SI_REQUEST:"New SI request", INVOICE_QUERY:"Invoice query", GENERAL:"General", SPAM:"Spam" };
+const FIELD = { shipper:"Shipper", consignee:"Consignee", notify_party:"Notify party", port_of_loading:"Port of loading", port_of_discharge:"Port of discharge", container_count:"Container count", gross_weight_kg:"Gross weight (kg)" };
+const REASON = { unreadable:"Document unreadable", missing_attachment:"Attachment missing", missing_value:"Required value missing", wrong_doc_type:"Wrong document type", low_confidence:"Low classification confidence", processing_error:"Processing failed" };
+const CAT_ORDER = ["BL_COMPARISON","SI_REQUEST","INVOICE_QUERY","GENERAL","SPAM"];
+
+let DATA = null, rows = [];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+function statusKind(e) {
+  if (e.status === "MISMATCH") return "mismatch";
+  if (e.status === "NEEDS_REVIEW") return "review";
+  return "ok";
+}
+function statusChip(e) {
+  const k = statusKind(e);
+  const text = k === "mismatch" ? "Mismatch" : k === "review" ? (REASON[e.review_reason] || "Needs review") : "No mismatch";
+  return `<span class="chip ${k}"><span class="dot ${k}"></span>${esc(text)}</span>`;
+}
+
+function renderTiles() {
+  const s = DATA.summary;
+  const reviewed = (s.statuses.NEEDS_REVIEW || 0);
+  const tiles = [
+    { label: "Emails processed", value: s.total, note: "whole inbox" },
+    { label: "Comparison requests", value: s.categories.BL_COMPARISON || 0, note: "routed to document checking" },
+    { label: "Mismatches found", value: s.defects, note: "SI and BL disagree" },
+    { label: "Escalated to a human", value: reviewed, note: "not decided automatically" },
+  ];
+  $("tiles").innerHTML = tiles.map(t =>
+    `<div class="tile"><div class="label">${esc(t.label)}</div><div class="value">${t.value}</div><div class="note">${esc(t.note)}</div></div>`).join("");
+
+  const failed = DATA.summary.review_reasons?.processing_error || 0;
+  if (failed) {
+    $("banner").hidden = false;
+    $("banner").textContent = `${failed} emails could not be processed because the model API failed (rate limits), not because of anything in the documents. They are escalated rather than guessed at, and can be retried without re-running the rest.`;
+  }
+}
+
+function renderBars() {
+  const cats = DATA.summary.categories;
+  const max = Math.max(...Object.values(cats));
+  $("bars").innerHTML = CAT_ORDER.filter(c => cats[c]).map(c => `
+    <div class="bar-row">
+      <span class="bar-name">${esc(LABEL[c] || c)}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(cats[c] / max * 100).toFixed(1)}%"></div></div>
+      <span class="bar-val">${cats[c]}</span>
+    </div>`).join("");
+}
+
+function renderFilters() {
+  const cats = DATA.summary.categories, sts = DATA.summary.statuses;
+  $("f-cat").insertAdjacentHTML("beforeend", CAT_ORDER.filter(c => cats[c])
+    .map(c => `<option value="${c}">${esc(LABEL[c] || c)} (${cats[c]})</option>`).join(""));
+  const stLabel = { OK:"No mismatch", MISMATCH:"Mismatch", NEEDS_REVIEW:"Needs review" };
+  $("f-status").insertAdjacentHTML("beforeend", Object.keys(stLabel).filter(s => sts[s])
+    .map(s => `<option value="${s}">${esc(stLabel[s])} (${sts[s]})</option>`).join(""));
+}
+
+function apply() {
+  const cat = $("f-cat").value, st = $("f-status").value, q = $("f-q").value.trim().toLowerCase();
+  rows = DATA.emails.filter(e =>
+    (!cat || e.category === cat) && (!st || e.status === st) &&
+    (!q || e.email_id.toLowerCase().includes(q) || (e.subject || "").toLowerCase().includes(q) || (e.from || "").toLowerCase().includes(q)));
+  rows.sort((a, b) => (b.has_defect - a.has_defect) || a.email_id.localeCompare(b.email_id));
+
+  $("count").textContent = `${rows.length} of ${DATA.emails.length} emails`;
+  $("empty").hidden = rows.length > 0;
+  $("rows").innerHTML = rows.map((e, i) => `
+    <tr tabindex="0" data-i="${i}">
+      <td class="id">${esc(e.email_id.replace("email_", "#"))}</td>
+      <td class="subj">${esc(e.subject || "(no subject)")}</td>
+      <td>${esc(LABEL[e.category] || e.category)}</td>
+      <td>${statusChip(e)}</td>
+      <td class="flag">${e.defect_fields.length ? esc(e.defect_fields.map(f => FIELD[f] || f).join(", ")) : "—"}</td>
+    </tr>`).join("");
+}
+
+function open(e) {
+  $("d-subject").textContent = e.subject || "(no subject)";
+  $("d-id").textContent = `${e.email_id} · from ${e.from || "unknown"}`;
+  const conf = e.confidence == null ? "—" : `${(e.confidence * 100).toFixed(0)}%`;
+  const fields = Object.keys(e.mismatches || {});
+
+  let html = `<dl class="kv">
+      <dt>Classified as</dt><dd>${esc(LABEL[e.category] || e.category)}</dd>
+      <dt>Confidence</dt><dd>${conf}</dd>
+      <dt>Result</dt><dd>${statusChip(e)}</dd>
+    </dl>`;
+
+  if (fields.length) {
+    html += `<h3 class="sec">Mismatched fields — SI is the reference</h3>
+      <table class="diff"><thead><tr><th>Field</th><th>Shipping Instruction</th><th>Draft Bill of Lading</th></tr></thead><tbody>` +
+      fields.map(f => `<tr><td class="f">${esc(FIELD[f] || f)}</td><td class="v">${esc(e.mismatches[f].si ?? "—")}</td><td class="v">${esc(e.mismatches[f].bl ?? "—")}</td></tr>`).join("") +
+      `</tbody></table>`;
+  } else if (e.category === "BL_COMPARISON" && e.status === "OK") {
+    html += `<h3 class="sec">Comparison</h3><p style="margin:0;color:var(--text-secondary)">No mismatch detected — all seven fields agree between the SI and the draft BL.</p>`;
+  } else if (e.review_reason) {
+    html += `<h3 class="sec">Escalated</h3><p style="margin:0;color:var(--text-secondary)">${esc(REASON[e.review_reason] || e.review_reason)}. Sent for human review rather than guessed at.</p>`;
+  }
+
+  if (e.si_text || e.bl_text) {
+    html += `<h3 class="sec">Source documents</h3><div class="docs">
+      <div><div class="meta" style="margin-bottom:6px">Shipping Instruction</div><pre class="doc">${esc(e.si_text || "(not available)")}</pre></div>
+      <div><div class="meta" style="margin-bottom:6px">Draft Bill of Lading</div><pre class="doc">${esc(e.bl_text || "(not available)")}</pre></div>
+    </div>`;
+  }
+  if (e.body) html += `<h3 class="sec">Email body</h3><pre class="doc">${esc(e.body)}</pre>`;
+
+  $("d-body").innerHTML = html;
+  $("dlg").showModal();
+}
+
+$("rows").addEventListener("click", ev => { const tr = ev.target.closest("tr[data-i]"); if (tr) open(rows[+tr.dataset.i]); });
+$("rows").addEventListener("keydown", ev => {
+  if (ev.key !== "Enter" && ev.key !== " ") return;
+  const tr = ev.target.closest("tr[data-i]");
+  if (tr) { ev.preventDefault(); open(rows[+tr.dataset.i]); }
+});
+$("d-close").addEventListener("click", () => $("dlg").close());
+["f-cat","f-status","f-q"].forEach(id => $(id).addEventListener("input", apply));
+$("theme").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+});
+
+fetch("report.json")
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => {
+    DATA = d;
+    $("stamp").textContent = "Run of " + new Date(d.generated_at).toLocaleString();
+    renderTiles(); renderBars(); renderFilters(); apply();
+    $("loading").hidden = true; $("app").hidden = false;
+  })
+  .catch(err => { $("loading").textContent = "Could not load report.json — " + err.message; });
+</script>
+</body>
+</html>
