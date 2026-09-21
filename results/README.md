@@ -5,10 +5,12 @@ tracked by git; the run files are ignored.
 
 | File | What it is |
 |---|---|
-| `results.jsonl` | One line per email, written as each one finishes. The full detail: verdict, per-field mismatches, and `field_issues` (why a field went to a human, with the evidence). `?resume=true` continues from this file. |
+| `results.jsonl` | One line per email, written as each one finishes. The full detail: verdict, one-line `summary`, every value read from the SI and BL (`extracted`), per-field mismatches, and `field_issues` (why a field went to a human, with the evidence). `?resume=true` continues from this file. Always written, whether or not MongoDB is used. |
 | `output.json` | The submission: one object per `email_id`, in the shape of `data/sample_submission.json`. This is the file you score or submit. |
 | `classify_cache.json` | The same verdicts plus each email's classification confidence, for tuning the threshold offline. |
 | `*.sample.*` | The same three files from a limited run (`POST /run?limit=N`). Kept apart so a small test run can never overwrite a full one. |
+
+If `MONGODB_URI` is set, every record in `results.jsonl` is also copied into the `results` collection of your MongoDB (and each run into `runs`), and the web app reads from there. The file stays as the crash-safe checkpoint, so a database that is down never loses a run.
 
 `web/report.json` is the one output that lives elsewhere: the dashboard is a static page
 served from `web/`, so it reads its data from there. Build it from these files with

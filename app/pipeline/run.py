@@ -2,7 +2,6 @@
 
 needs_review is set explicitly at every branch below, never guessed away.
 """
-import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
@@ -11,9 +10,20 @@ from app.llm_client import LLMUnavailableError
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
 from app.pipeline.extract import extract_document
-from app.schema import ComparisonResult, EmailCategory, ReviewReason
+from app.schema import ComparisonResult, EmailCategory, ExtractedDocument, ReviewReason
+from app.store import better_failure, is_failed
 
 CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.2
+
+
+def _extracted(si, bl) -> dict:
+    """Every value read from the two documents, kept alongside the verdict."""
+    return {
+        label: ExtractedDocument(
+            file=result.file, fields=result.fields.model_dump(), sources=result.sources
+        )
+        for label, result in (("SI", si), ("BL", bl))
+    }
 
 
 def process_email(email: dict, inbox) -> ComparisonResult:
@@ -24,7 +34,7 @@ def process_email(email: dict, inbox) -> ComparisonResult:
     email_id = email["email_id"]
 
     try:
-        category, confidence = classify_email(email)
+        category, confidence, summary = classify_email(email)
     except (LLMUnavailableError, ValueError, KeyError):
         # The model never returned a usable category. Report the neutral bucket
         # so the submission stays well-formed, but flag it so the score isn't
@@ -36,18 +46,14 @@ def process_email(email: dict, inbox) -> ComparisonResult:
             review_reason=ReviewReason.PROCESSING_ERROR,
         )
 
+    base = dict(email_id=email_id, category=category, confidence=confidence, summary=summary)
+
     if category != EmailCategory.BL_COMPARISON:
-        return ComparisonResult(
-            email_id=email_id, category=category, confidence=confidence
-        )
+        return ComparisonResult(**base)
 
     if confidence < CLASSIFICATION_CONFIDENCE_THRESHOLD:
         return ComparisonResult(
-            email_id=email_id,
-            category=category,
-            confidence=confidence,
-            needs_review=True,
-            review_reason=ReviewReason.LOW_CONFIDENCE,
+            **base, needs_review=True, review_reason=ReviewReason.LOW_CONFIDENCE
         )
 
     attachments = email.get("attachments", [])
@@ -56,11 +62,7 @@ def process_email(email: dict, inbox) -> ComparisonResult:
 
     if not si_candidates or not bl_candidates:
         return ComparisonResult(
-            email_id=email_id,
-            category=category,
-            confidence=confidence,
-            needs_review=True,
-            review_reason=ReviewReason.MISSING_ATTACHMENT,
+            **base, needs_review=True, review_reason=ReviewReason.MISSING_ATTACHMENT
         )
 
     si_path, bl_path = si_candidates[0], bl_candidates[0]
@@ -72,91 +74,37 @@ def process_email(email: dict, inbox) -> ComparisonResult:
         # An API failure says nothing about the document -- keep it out of the
         # unreadable bucket so rate limits don't masquerade as real verdicts.
         return ComparisonResult(
-            email_id=email_id,
-            category=category,
-            confidence=confidence,
-            needs_review=True,
-            review_reason=ReviewReason.PROCESSING_ERROR,
+            **base, needs_review=True, review_reason=ReviewReason.PROCESSING_ERROR
         )
     except (ValueError, OSError):
         return ComparisonResult(
-            email_id=email_id,
-            category=category,
-            confidence=confidence,
-            needs_review=True,
-            review_reason=ReviewReason.UNREADABLE,
+            **base, needs_review=True, review_reason=ReviewReason.UNREADABLE
         )
+
+    extracted = _extracted(si, bl)
 
     # A field the ladder could not settle is never compared or guessed at: the
     # email goes to a human, with each field's reason and evidence attached.
     issues = si.issues + bl.issues
     if issues:
         return ComparisonResult(
-            email_id=email_id,
-            category=category,
-            confidence=confidence,
+            **base,
             needs_review=True,
             review_reason=ReviewReason.MISSING_VALUE,
             field_issues=issues,
+            extracted=extracted,
         )
 
     mismatches = compare_fields(si.fields, bl.fields)
     return ComparisonResult(
-        email_id=email_id,
-        category=category,
-        confidence=confidence,
+        **base,
         mismatch_found=bool(mismatches),
         mismatches=mismatches,
+        extracted=extracted,
     )
 
 
 SUBMISSION_KEYS = ("category", "status", "review_reason", "defect_fields", "has_defect")
-
-
-def _failed(record: dict) -> bool:
-    return record.get("review_reason") == ReviewReason.PROCESSING_ERROR.value
-
-
-def _better_failure(prior: Optional[dict], new: dict) -> dict:
-    """Pick whichever failed attempt still knows the most.
-
-    A failure after a successful classification keeps the real category; one
-    where classification itself failed only has the GENERAL fallback. Retrying
-    while the API is down must not trade the former for the latter.
-    """
-    if prior is None:
-        return new
-    if prior["category"] != EmailCategory.GENERAL.value:
-        if new["category"] == EmailCategory.GENERAL.value:
-            return prior
-    return new
-
-
-def _load_checkpoint(path) -> tuple[dict, dict]:
-    """Read a checkpoint file, split into (succeeded, failed) by email_id.
-
-    Failures are kept separate so resuming retries them rather than banking an
-    API outage as a verdict -- but they're still returned, so a retry that also
-    fails can fall back to what the earlier attempt knew.
-    """
-    if path is None or not path.exists():
-        return {}, {}
-    done: dict = {}
-    failed: dict = {}
-    for line in path.read_text().splitlines():
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            continue  # a run killed mid-write can leave one torn line
-        email_id = record["email_id"]
-        if _failed(record):
-            failed[email_id] = _better_failure(failed.get(email_id), record)
-        else:
-            done[email_id] = record
-            failed.pop(email_id, None)
-    return done, failed
 
 
 def _record(result) -> dict:
@@ -171,6 +119,8 @@ def _record(result) -> dict:
         "confidence": result.confidence,
         "mismatches": result.mismatches,
         "field_issues": [issue.model_dump(mode="json") for issue in result.field_issues],
+        "summary": result.summary,
+        "extracted": {k: v.model_dump(mode="json") for k, v in result.extracted.items()},
         **result.to_submission(),
     }
 
@@ -178,16 +128,16 @@ def _record(result) -> dict:
 def run_pipeline(
     inbox,
     limit: Optional[int] = None,
-    checkpoint_path=None,
+    checkpoint=None,
     resume: bool = False,
     concurrency: Optional[int] = None,
 ) -> tuple[dict, dict]:
     """Process the inbox, or only its first `limit` emails.
 
-    Each result is appended to `checkpoint_path` as it completes, so a run that
-    dies partway can be continued with resume=True instead of restarting. Work
-    is spread over a thread pool because the pipeline is I/O-bound on API calls,
-    not CPU-bound.
+    Each result is appended to `checkpoint` (a store.Checkpoint) as it completes,
+    so a run that dies partway can be continued with resume=True instead of
+    restarting. Work is spread over a thread pool because the pipeline is I/O-bound
+    on API calls, not CPU-bound.
 
     Returns (submission, classify_records). classify_records pairs each email's
     raw self-reported confidence with its computed verdict, so the confidence
@@ -200,9 +150,9 @@ def run_pipeline(
     if limit is not None:
         emails = emails[:limit]
 
-    done, failed = _load_checkpoint(checkpoint_path) if resume else ({}, {})
-    if checkpoint_path is not None and not resume:
-        checkpoint_path.write_text("")
+    done, failed = checkpoint.load() if checkpoint is not None and resume else ({}, {})
+    if checkpoint is not None and not resume:
+        checkpoint.reset()
 
     todo = [e for e in emails if e["email_id"] not in done]
 
@@ -226,12 +176,11 @@ def run_pipeline(
             # as_completed yields in this thread, so appends stay serialized.
             for future in as_completed(futures):
                 record = future.result()
-                if _failed(record):
-                    record = _better_failure(failed.get(record["email_id"]), record)
+                if is_failed(record):
+                    record = better_failure(failed.get(record["email_id"]), record)
                 done[record["email_id"]] = record
-                if checkpoint_path is not None:
-                    with checkpoint_path.open("a") as fh:
-                        fh.write(json.dumps(record) + "\n")
+                if checkpoint is not None:
+                    checkpoint.append(record)
 
     submission = {}
     classify_records = {}
