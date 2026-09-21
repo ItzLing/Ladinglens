@@ -442,3 +442,65 @@ delete prior entries. See `AGENT.md` for the full protocol.
   miss two thirds of genuine discrepancies. Investigate against `ground_truth.json`.
 - A retry attempt at 00:28 failed on quota and *regressed* output 102 -> 69 BL_COMPARISON.
   Restored from `results.jsonl.bak`; the `_better_failure` guard now prevents a repeat.
+
+---
+
+## 2026-09-21 — Claude Code + team (0.4037 -> 0.7465)
+
+**Score progression this session:**
+
+| run | model / change | stage1 | defect F1 | e2e | FINAL |
+|---|---|---|---|---|---|
+| baseline | `gemini-3.1-flash-lite`, 157 API failures | 0.707 | 0.432 | 0.196 | **0.4037** |
+| +tokens | `gemini-3.6-flash`, `LLM_MAX_TOKENS=16384` | 0.872 | 0.622 | 0.478 | **0.6442** |
+| +prompts | classify prompt sharpened | 0.865 | 0.761 | 0.674 | **0.7465** |
+
+End-to-end (weighted 0.5, the headline metric) went 9/46 -> 22/46 -> **31/46** defect
+emails caught.
+
+**What changed:**
+- Switched to `gemini-3.6-flash` with `LLM_MAX_TOKENS=16384`. This was the single
+  biggest jump (+0.24). The prior budget was truncating replies mid-JSON, which the
+  pipeline logged as `processing_error` -- a *document* verdict for an *infrastructure*
+  problem. `processing_error` went 157 -> 0.
+- Classification prompt sharpened: `SI_REQUEST` precision 0.64 -> 0.93, which lifted
+  `BL_COMPARISON` recall 0.46 -> 0.68. The two categories were being confused with each
+  other, and a misrouted email can never have its defect caught.
+- Built `web/` -- a static review dashboard (no build step) with a filterable inbox and
+  the side-by-side SI vs BL field diff the brief asks for. `web/build_report.py` joins
+  `results.jsonl` with the inbox to produce `report.json`, since `output.json` alone
+  drops `ComparisonResult.mismatches` and so cannot drive that view.
+- `README.md` rewritten: bash **and** PowerShell for every command, and the stale bits
+  fixed (Ollama was no longer the default; `INBOX_SOURCE` is `data/data_v2`).
+- `.gitignore` widened to `.env.*` -- it previously matched only the exact name `.env`,
+  so a `.env.bak` sat unignored with a live API key in it.
+
+**Decisions made:**
+- Dashboard is a **static page, not Next.js**: no build step means nothing can fail
+  during a judging demo, and Vercel still allows `api/*.py` functions alongside it if
+  live processing is wanted later. Deploy with Root Directory = `web`.
+- The dashboard banner explains whichever escalation reason dominates. With 64 emails
+  escalated and no explanation, a reader would assume breakage; it now states plainly
+  that 30 carry PDF/Word/Excel attachments this version does not parse, and that
+  escalating beats guessing -- which is the brief's own requirement.
+
+**Open questions / next steps:**
+- **Document parsing is the biggest remaining win.** 58 of 250 attachments are non-txt
+  (28 pdf, 22 xlsx, 8 docx) and **54 of 150 comparison requests never reach comparison**.
+  The PDFs carry a text layer (`/Font` present, ~3 KB each) so **no OCR is needed** --
+  `pypdf` + `python-docx` and a dispatcher into the existing `extract_fields()` is
+  enough. `openpyxl` is already installed.
+- `GENERAL` precision is now **0.42** (recall 0.83) -- it has taken over as the
+  over-predicting category from `SI_REQUEST`. `BL_COMPARISON` recall is still 0.68.
+- Escalation precision 0.281 (64 flagged vs 20 gold) -- mostly the unreadable
+  attachments above; it should fall out once those are parsed.
+- Whiteboard items deliberately **not** pursued: Airflow/Spark (wrong-sized for an
+  I/O-bound job over 520 docs), Mongo (JSONL checkpointing already covers this scale),
+  chatbot. None move the rubric. Per-email checkpointing already makes the work
+  resumable and splittable, which is the honest answer to a scale question.
+- `HANDOFF.md` is now 10 entries; `AGENT.md` asks for archiving past ~5. Worth moving
+  the pre-2026-09-21 entries into `HANDOFF-archive.md` as a separate commit.
+- `results.jsonl.bak` / `results.jsonl.afterretry` are tracked (commit `8ce18bb`) but
+  are scratch run data -- `git rm --cached` when convenient.
+
+**Synced through:** `938aa57`
