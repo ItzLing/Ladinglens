@@ -3,200 +3,460 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ladinglens — SI/BL discrepancy review</title>
+<title>Ladinglens - SI/BL discrepancy review</title>
 <style>
   :root {
     color-scheme: light;
-    --surface-0: #f4f4f2;
-    --surface-1: #fcfcfb;
-    --surface-2: #eceae5;
-    --border:    #dedbd4;
-    --border-strong: #c6c2b8;
-    --text-primary:   #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted:     #7a7873;
-    --series-1: #2a78d6;
-    --track:    #e4e2dc;
-    --good:     #0ca30c;
-    --warning:  #fab219;
-    --critical: #d03b3b;
-    --good-ink:     #076b07;
-    --warning-ink:  #7a5200;
-    --critical-ink: #a32c2c;
+    --bg: #f6f7f5;
+    --surface: #ffffff;
+    --surface-soft: #f0f3f1;
+    --surface-tint: #eef6f5;
+    --line: #dce2de;
+    --line-strong: #bfc9c4;
+    --text: #17211d;
+    --text-soft: #4b5954;
+    --text-muted: #71807a;
+    --brand: #096b72;
+    --brand-strong: #064f55;
+    --accent: #2f6fd5;
+    --good: #16823a;
+    --warn: #b96e00;
+    --bad: #c0392b;
+    --good-bg: #e8f6ed;
+    --warn-bg: #fff4df;
+    --bad-bg: #fdebea;
+    --shadow: 0 18px 48px rgba(25, 44, 36, .11);
   }
-  @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) {
-      color-scheme: dark;
-      --surface-0: #121211;
-      --surface-1: #1a1a19;
-      --surface-2: #232322;
-      --border:    #333330;
-      --border-strong: #4a4a46;
-      --text-primary:   #ffffff;
-      --text-secondary: #c3c2b7;
-      --text-muted:     #94938b;
-      --series-1: #3987e5;
-      --track:    #2c2c2a;
-      --good-ink:     #4cc64c;
-      --warning-ink:  #fab219;
-      --critical-ink: #ef7b7b;
-    }
-  }
+
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --surface-0: #121211;
-    --surface-1: #1a1a19;
-    --surface-2: #232322;
-    --border:    #333330;
-    --border-strong: #4a4a46;
-    --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted:     #94938b;
-    --series-1: #3987e5;
-    --track:    #2c2c2a;
-    --good-ink:     #4cc64c;
-    --warning-ink:  #fab219;
-    --critical-ink: #ef7b7b;
+    --bg: #101513;
+    --surface: #171d1a;
+    --surface-soft: #202723;
+    --surface-tint: #142826;
+    --line: #2b3732;
+    --line-strong: #405049;
+    --text: #f4faf6;
+    --text-soft: #bdcbc5;
+    --text-muted: #8d9d96;
+    --brand: #45b9be;
+    --brand-strong: #84dadd;
+    --accent: #7aa7ef;
+    --good: #5ed47e;
+    --warn: #f1b64c;
+    --bad: #f07167;
+    --good-bg: #173322;
+    --warn-bg: #392812;
+    --bad-bg: #3b1d1b;
+    --shadow: 0 24px 70px rgba(0, 0, 0, .28);
   }
 
   * { box-sizing: border-box; }
+  html { min-width: 320px; }
   body {
     margin: 0;
-    background: var(--surface-0);
-    color: var(--text-primary);
-    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    background:
+      linear-gradient(135deg, rgba(9, 107, 114, .09), transparent 34%),
+      linear-gradient(315deg, rgba(47, 111, 213, .08), transparent 28%),
+      var(--bg);
+    color: var(--text);
+    font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: 0;
   }
+
   [hidden] { display: none !important; }
-  .wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px; padding-left: 20px; padding-right: 20px; }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
-  header.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 26px; }
-  h1 { margin: 0; font-size: 21px; letter-spacing: -0.01em; }
-  .sub { margin: 5px 0 0; color: var(--text-secondary); font-size: 13px; max-width: 62ch; }
+  .shell { max-width: 1360px; margin: 0 auto; padding: 22px; }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(145deg, var(--brand), var(--accent));
+    box-shadow: 0 10px 24px rgba(9, 107, 114, .2);
+    font-weight: 800;
+  }
+  h1 { margin: 0; font-size: 22px; line-height: 1.1; }
+  .subtitle { margin: 3px 0 0; color: var(--text-soft); font-size: 13px; }
+  .actions { display: flex; align-items: center; gap: 10px; }
   .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-
-  button.ghost {
-    background: var(--surface-1); color: var(--text-secondary);
-    border: 1px solid var(--border); border-radius: 7px;
-    padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  .icon-btn, .text-btn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text-soft);
+    min-height: 38px;
+    border-radius: 8px;
   }
-  button.ghost:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .icon-btn { width: 38px; display: grid; place-items: center; font-size: 16px; }
+  .text-btn { padding: 0 13px; }
+  .icon-btn:hover, .text-btn:hover { border-color: var(--line-strong); color: var(--text); }
 
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
-  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 11px; padding: 15px 16px; }
-  .tile .label { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.055em; }
-  .tile .value { font-size: 29px; font-weight: 640; letter-spacing: -0.02em; margin-top: 7px; font-variant-numeric: tabular-nums; }
-  .tile .note { color: var(--text-muted); font-size: 12px; margin-top: 3px; }
-
-  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 11px; padding: 18px; margin-bottom: 22px; }
-  .panel h2 { margin: 0 0 3px; font-size: 14px; }
-  .panel .cap { margin: 0 0 15px; color: var(--text-secondary); font-size: 12.5px; }
-
-  .bars { display: grid; gap: 9px; }
-  .bar-row { display: grid; grid-template-columns: 132px 1fr 46px; gap: 11px; align-items: center; }
-  .bar-name { color: var(--text-secondary); font-size: 12.5px; }
-  .bar-track { background: var(--track); border-radius: 4px; height: 13px; overflow: hidden; }
-  .bar-fill { background: var(--series-1); height: 100%; border-radius: 0 4px 4px 0; }
-  .bar-val { text-align: right; font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-
-  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
-  select, input[type="search"] {
-    background: var(--surface-1); color: var(--text-primary);
-    border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 13px;
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) 360px;
+    gap: 18px;
+    align-items: stretch;
+    margin-bottom: 18px;
   }
-  input[type="search"] { flex: 1 1 220px; min-width: 0; }
-  select:focus-visible, input:focus-visible, button:focus-visible, tr:focus-visible {
-    outline: 2px solid var(--series-1); outline-offset: 1px;
+  .mission {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+    overflow: hidden;
+  }
+  .eyebrow {
+    margin: 0 0 9px;
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 760;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .mission h2 {
+    margin: 0;
+    max-width: 760px;
+    font-size: clamp(28px, 4vw, 54px);
+    line-height: 1;
+    letter-spacing: 0;
+  }
+  .mission p { max-width: 760px; margin: 14px 0 0; color: var(--text-soft); font-size: 15px; }
+  .route {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .route-step {
+    min-height: 86px;
+    padding: 13px;
+    border: 1px solid var(--line);
+    background: var(--surface-soft);
+    border-radius: 8px;
+  }
+  .step-num { color: var(--brand); font-weight: 800; font-size: 12px; }
+  .route-step strong { display: block; margin-top: 8px; font-size: 13px; }
+  .route-step span { display: block; margin-top: 3px; color: var(--text-muted); font-size: 12px; }
+
+  .summary {
+    display: grid;
+    gap: 10px;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .metric .label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
+  .metric .value { margin-top: 6px; font-size: 32px; line-height: 1; font-weight: 760; font-variant-numeric: tabular-nums; }
+  .metric .note { margin-top: 7px; color: var(--text-soft); font-size: 12px; }
+  .metric.bad { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); background: var(--bad-bg); }
+  .metric.warn { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); background: var(--warn-bg); }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: 310px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .panel-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+  .panel h3 { margin: 0; font-size: 14px; }
+  .panel .cap { margin: 3px 0 0; color: var(--text-muted); font-size: 12px; }
+  .panel-body { padding: 14px 16px 16px; }
+  .bars { display: grid; gap: 12px; }
+  .bar-row { display: grid; grid-template-columns: 1fr max-content; gap: 8px 10px; align-items: center; }
+  .bar-name { color: var(--text-soft); font-size: 12.5px; }
+  .bar-val { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .bar-track { grid-column: 1 / -1; height: 8px; background: var(--surface-soft); border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), var(--accent)); }
+  .banner {
+    margin-top: 14px;
+    border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line));
+    border-left: 4px solid var(--warn);
+    background: var(--warn-bg);
+    color: var(--text-soft);
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-size: 12.5px;
+  }
+
+  .desk { min-width: 0; }
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .searchbox { position: relative; min-width: 0; }
+  .searchbox input {
+    width: 100%;
+    height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0 14px 0 38px;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .searchbox span { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+  .filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  select {
+    height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 0 34px 0 11px;
+  }
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; }
+  .tab {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-soft);
+    padding: 7px 12px;
+    font-size: 12.5px;
+  }
+  .tab.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  .table-card { overflow: hidden; }
+  .table-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--line);
   }
   .count { color: var(--text-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
-
-  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-1); }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; }
-  th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { color: var(--text-secondary); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; background: var(--surface-2); }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 850px; font-size: 13px; }
+  th, td { text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th {
+    color: var(--text-muted);
+    font-weight: 760;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    white-space: nowrap;
+    background: var(--surface-soft);
+  }
   tbody tr { cursor: pointer; }
-  tbody tr:hover { background: var(--surface-2); }
+  tbody tr:hover { background: var(--surface-tint); }
   tbody tr:last-child td { border-bottom: none; }
-  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
-  td.subj { min-width: 260px; }
-  .flag { color: var(--text-muted); font-size: 12px; }
+  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--text-soft); white-space: nowrap; }
+  .subject { min-width: 280px; }
+  .subject strong { display: block; color: var(--text); font-weight: 650; }
+  .subject span { display: block; margin-top: 3px; color: var(--text-muted); font-size: 12px; max-width: 52ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fields { color: var(--text-soft); font-size: 12px; max-width: 220px; }
+  .confidence { display: grid; grid-template-columns: 46px 92px; gap: 9px; align-items: center; color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .conf-track { height: 7px; border-radius: 99px; background: var(--surface-soft); overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: inherit; background: var(--accent); }
 
-  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; white-space: nowrap; border: 1px solid var(--border-strong); color: var(--text-secondary); }
-  .chip.ok       { color: var(--good-ink); border-color: var(--good); }
-  .chip.mismatch { color: var(--critical-ink); border-color: var(--critical); }
-  .chip.review   { color: var(--warning-ink); border-color: var(--warning); }
-  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .dot.ok { background: var(--good); } .dot.mismatch { background: var(--critical); } .dot.review { background: var(--warning); }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 26px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    white-space: nowrap;
+    border: 1px solid var(--line-strong);
+    color: var(--text-soft);
+    background: var(--surface);
+  }
+  .chip.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 55%, var(--line)); background: var(--good-bg); }
+  .chip.mismatch { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); background: var(--bad-bg); }
+  .chip.review { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); background: var(--warn-bg); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: currentColor; }
+
+  .empty {
+    padding: 42px 18px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .empty strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 6px; }
 
   dialog {
-    border: 1px solid var(--border); border-radius: 13px; background: var(--surface-1); color: var(--text-primary);
-    padding: 0; width: min(880px, calc(100vw - 32px)); max-height: 86vh; overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 0;
+    width: min(1040px, calc(100vw - 28px));
+    max-height: 88vh;
+    overflow: auto;
+    box-shadow: var(--shadow);
   }
-  dialog::backdrop { background: rgba(0,0,0,.45); }
-  .dlg-head { position: sticky; top: 0; background: var(--surface-1); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; }
-  .dlg-body { padding: 18px 20px 24px; }
-  .dlg-title { font-size: 15px; font-weight: 640; margin: 0 0 4px; }
-  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; font-size: 13px; margin-bottom: 20px; }
-  .kv dt { color: var(--text-secondary); } .kv dd { margin: 0; }
-  h3.sec { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin: 22px 0 9px; }
-  .diff { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
-  .diff th, .diff td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  .diff td.f { color: var(--text-secondary); white-space: nowrap; }
+  dialog::backdrop { background: rgba(7, 13, 11, .58); }
+  .dlg-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding: 17px 20px;
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .dlg-title { font-size: 17px; font-weight: 760; margin: 0 0 4px; }
+  .dlg-body { padding: 18px 20px 22px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .detail-item { border: 1px solid var(--line); background: var(--surface-soft); border-radius: 8px; padding: 12px; }
+  .detail-item span { display: block; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+  .detail-item strong { display: block; margin-top: 6px; font-size: 13px; word-break: break-word; }
+  h3.sec { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin: 22px 0 9px; }
+  .diff { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .diff th, .diff td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .diff td.f { color: var(--text-soft); white-space: nowrap; }
   .diff td.v { white-space: pre-wrap; word-break: break-word; }
   .diff tr:last-child td { border-bottom: none; }
   .docs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 720px) { .docs { grid-template-columns: 1fr; } .bar-row { grid-template-columns: 96px 1fr 40px; } }
-  pre.doc { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 12px; overflow: auto; max-height: 300px; font-size: 11.5px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-break: break-word; }
-  .empty { padding: 34px 16px; text-align: center; color: var(--text-muted); }
-  .banner { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: 8px; padding: 11px 14px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 22px; }
+  pre.doc {
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    overflow: auto;
+    max-height: 330px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  @media (max-width: 980px) {
+    .hero, .workspace { grid-template-columns: 1fr; }
+    .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .shell { padding: 14px; }
+    .topbar, .toolbar, .table-head { align-items: stretch; flex-direction: column; display: flex; }
+    .actions, .filters { justify-content: flex-start; }
+    .route, .summary, .detail-grid, .docs { grid-template-columns: 1fr; }
+    .mission { padding: 18px; }
+    .mission h2 { font-size: 32px; }
+    .meta#stamp { display: none; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div>
-      <h1>Ladinglens</h1>
-      <p class="sub">Shipping Instruction vs. draft Bill of Lading discrepancy review. Every inbox email is classified; comparison requests have seven shipment fields extracted from both documents and diffed.</p>
+<main class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">LL</div>
+      <div>
+        <h1>Ladinglens</h1>
+        <p class="subtitle">Inbox triage and SI/BL discrepancy review</p>
+      </div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center">
+    <div class="actions">
       <span class="meta" id="stamp"></span>
-      <button class="ghost" id="theme" type="button">Theme</button>
+      <button class="icon-btn" id="theme" type="button" title="Toggle theme" aria-label="Toggle theme">&#9680;</button>
     </div>
   </header>
 
   <div id="app" hidden>
-    <div class="tiles" id="tiles"></div>
-    <div class="banner" id="banner" hidden></div>
-
-    <section class="panel">
-      <h2>Emails by category</h2>
-      <p class="cap">Count of inbox emails per classification. Only comparison requests continue to document checking.</p>
-      <div class="bars" id="bars"></div>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="mission">
+        <p class="eyebrow">Shipping operations console</p>
+        <h2 id="hero-title">Find the emails that matter, then prove every document difference.</h2>
+        <p>Every message is classified first. Only document comparison requests move into field extraction, mismatch checking, and human review when the system cannot decide confidently.</p>
+        <div class="route" aria-label="Processing route">
+          <div class="route-step"><span class="step-num">01</span><strong>Classify</strong><span>Sort inbox messages by intent.</span></div>
+          <div class="route-step"><span class="step-num">02</span><strong>Extract</strong><span>Read SI and draft BL fields.</span></div>
+          <div class="route-step"><span class="step-num">03</span><strong>Compare</strong><span>Flag mismatched shipment values.</span></div>
+          <div class="route-step"><span class="step-num">04</span><strong>Review</strong><span>Escalate uncertain cases with evidence.</span></div>
+        </div>
+      </div>
+      <div class="summary" id="tiles"></div>
     </section>
 
-    <div class="controls">
-      <select id="f-cat" aria-label="Filter by category"><option value="">All categories</option></select>
-      <select id="f-status" aria-label="Filter by status"><option value="">All statuses</option></select>
-      <input type="search" id="f-q" placeholder="Search subject, sender or email ID…" aria-label="Search">
-      <span class="count" id="count"></span>
-    </div>
+    <section class="workspace" aria-label="Report workspace">
+      <aside class="panel">
+        <div class="panel-head">
+          <h3>Inbox mix</h3>
+          <p class="cap">Classification count by email category.</p>
+        </div>
+        <div class="panel-body">
+          <div class="bars" id="bars"></div>
+          <div class="banner" id="banner" hidden></div>
+        </div>
+      </aside>
 
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>Email</th><th>Subject</th><th>Category</th><th>Result</th><th>Fields flagged</th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-      <div class="empty" id="empty" hidden>No emails match these filters.</div>
-    </div>
+      <section class="desk">
+        <div class="toolbar">
+          <label class="searchbox">
+            <span aria-hidden="true">&#8981;</span>
+            <input type="search" id="f-q" placeholder="Search subject, sender, email ID or flagged field" aria-label="Search report">
+          </label>
+          <div class="filters">
+            <select id="f-cat" aria-label="Filter by category"><option value="">All categories</option></select>
+            <select id="f-status" aria-label="Filter by result"><option value="">All results</option></select>
+          </div>
+        </div>
+
+        <div class="tabs" id="tabs" aria-label="Result shortcuts"></div>
+
+        <div class="panel table-card">
+          <div class="table-head">
+            <div>
+              <h3>Review queue</h3>
+              <p class="cap">Select an email to inspect classification, mismatches, source text and escalation context.</p>
+            </div>
+            <span class="count" id="count"></span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Email</th><th>Subject</th><th>Category</th><th>Result</th><th>Confidence</th><th>Fields flagged</th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="empty" hidden>No emails match these filters.</div>
+        </div>
+      </section>
+    </section>
   </div>
 
-  <div class="empty" id="loading">Loading report…</div>
-</div>
+  <div class="empty" id="loading">Loading report...</div>
+</main>
 
 <dialog id="dlg">
   <div class="dlg-head">
-    <div><p class="dlg-title" id="d-subject"></p><span class="meta" id="d-id"></span></div>
-    <button class="ghost" id="d-close" type="button">Close</button>
+    <div>
+      <p class="dlg-title" id="d-subject"></p>
+      <span class="meta" id="d-id"></span>
+    </div>
+    <button class="text-btn" id="d-close" type="button">Close</button>
   </div>
   <div class="dlg-body" id="d-body"></div>
 </dialog>
@@ -206,107 +466,156 @@ const LABEL = { BL_COMPARISON:"Comparison request", SI_REQUEST:"New SI request",
 const FIELD = { shipper:"Shipper", consignee:"Consignee", notify_party:"Notify party", port_of_loading:"Port of loading", port_of_discharge:"Port of discharge", container_count:"Container count", gross_weight_kg:"Gross weight (kg)" };
 const REASON = { unreadable:"Document unreadable", missing_attachment:"Attachment missing", missing_value:"Required value missing", wrong_doc_type:"Wrong document type", low_confidence:"Low classification confidence", processing_error:"Processing failed" };
 const CAT_ORDER = ["BL_COMPARISON","SI_REQUEST","INVOICE_QUERY","GENERAL","SPAM"];
+const STATUS_LABEL = { OK:"No mismatch", MISMATCH:"Mismatch", NEEDS_REVIEW:"Needs review" };
+const STATUS_ORDER = ["", "MISMATCH", "NEEDS_REVIEW", "OK"];
 
-let DATA = null, rows = [];
+let DATA = null;
+let rows = [];
+let activeStatus = "";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const pct = n => n == null ? "-" : `${Math.round(n * 100)}%`;
 
 function statusKind(e) {
   if (e.status === "MISMATCH") return "mismatch";
   if (e.status === "NEEDS_REVIEW") return "review";
   return "ok";
 }
+
+function statusText(e) {
+  if (e.status === "NEEDS_REVIEW") return REASON[e.review_reason] || "Needs review";
+  return STATUS_LABEL[e.status] || e.status || "No mismatch";
+}
+
 function statusChip(e) {
   const k = statusKind(e);
-  const text = k === "mismatch" ? "Mismatch" : k === "review" ? (REASON[e.review_reason] || "Needs review") : "No mismatch";
-  return `<span class="chip ${k}"><span class="dot ${k}"></span>${esc(text)}</span>`;
+  return `<span class="chip ${k}"><span class="dot"></span>${esc(statusText(e))}</span>`;
+}
+
+function fieldList(e) {
+  return (e.defect_fields || []).map(f => FIELD[f] || f).join(", ");
 }
 
 function renderTiles() {
   const s = DATA.summary;
-  const reviewed = (s.statuses.NEEDS_REVIEW || 0);
+  const reviewed = s.statuses.NEEDS_REVIEW || 0;
+  const compared = s.categories.BL_COMPARISON || 0;
+  const clean = s.statuses.OK || 0;
   const tiles = [
     { label: "Emails processed", value: s.total, note: "whole inbox" },
-    { label: "Comparison requests", value: s.categories.BL_COMPARISON || 0, note: "routed to document checking" },
-    { label: "Mismatches found", value: s.defects, note: "SI and BL disagree" },
-    { label: "Escalated to a human", value: reviewed, note: "not decided automatically" },
+    { label: "Comparison requests", value: compared, note: "routed to document checking" },
+    { label: "Mismatches found", value: s.defects, note: "fields needing correction", tone: s.defects ? "bad" : "" },
+    { label: "Human review", value: reviewed, note: "uncertain or failed cases", tone: reviewed ? "warn" : "" },
+    { label: "Clean checks", value: clean, note: "no mismatch detected" },
   ];
-  $("tiles").innerHTML = tiles.map(t =>
-    `<div class="tile"><div class="label">${esc(t.label)}</div><div class="value">${t.value}</div><div class="note">${esc(t.note)}</div></div>`).join("");
+  $("tiles").innerHTML = tiles.map(t => `
+    <div class="metric ${t.tone || ""}">
+      <div class="label">${esc(t.label)}</div>
+      <div class="value">${esc(t.value)}</div>
+      <div class="note">${esc(t.note)}</div>
+    </div>`).join("");
 
-  // Explain whichever escalation reason dominates, so a reader never sees a
-  // large "needs review" count with no account of what it means.
-  const r = DATA.summary.review_reasons || {};
+  const r = s.review_reasons || {};
   const plural = n => n === 1 ? "email" : "emails";
   let note = "";
-  if (r.processing_error) {
-    note = `${r.processing_error} ${plural(r.processing_error)} could not be processed because the model API failed (rate limits), not because of anything in the documents. They are escalated rather than guessed at, and can be retried without re-running the rest.`;
+  if (s.total === 0) {
+    note = "This report currently has no emails. Run the pipeline, rebuild web/report.json, then refresh this page to see the review queue.";
+  } else if (r.processing_error) {
+    note = `${r.processing_error} ${plural(r.processing_error)} could not be processed because the model API failed. They are escalated instead of guessed and can be retried.`;
   } else if (r.unreadable) {
-    note = `${r.unreadable} ${plural(r.unreadable)} carry PDF, Word or Excel attachments, which this version does not parse yet — it reads plain-text documents only. Rather than guess at their contents, it escalates them for a human, as it does whenever it cannot complete a step confidently.`;
+    note = `${r.unreadable} ${plural(r.unreadable)} use attachments this version cannot parse yet. The system sends them to human review with context.`;
   }
   if (note) { $("banner").hidden = false; $("banner").textContent = note; }
 }
 
 function renderBars() {
-  const cats = DATA.summary.categories;
-  const max = Math.max(...Object.values(cats));
-  $("bars").innerHTML = CAT_ORDER.filter(c => cats[c]).map(c => `
+  const cats = DATA.summary.categories || {};
+  const max = Math.max(1, ...Object.values(cats));
+  const html = CAT_ORDER.filter(c => cats[c]).map(c => `
     <div class="bar-row">
       <span class="bar-name">${esc(LABEL[c] || c)}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${(cats[c] / max * 100).toFixed(1)}%"></div></div>
       <span class="bar-val">${cats[c]}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(cats[c] / max * 100).toFixed(1)}%"></div></div>
     </div>`).join("");
+  $("bars").innerHTML = html || `<div class="empty" style="padding:20px 0">No category data yet.</div>`;
 }
 
 function renderFilters() {
-  const cats = DATA.summary.categories, sts = DATA.summary.statuses;
+  const cats = DATA.summary.categories || {};
+  const sts = DATA.summary.statuses || {};
   $("f-cat").insertAdjacentHTML("beforeend", CAT_ORDER.filter(c => cats[c])
     .map(c => `<option value="${c}">${esc(LABEL[c] || c)} (${cats[c]})</option>`).join(""));
-  const stLabel = { OK:"No mismatch", MISMATCH:"Mismatch", NEEDS_REVIEW:"Needs review" };
-  $("f-status").insertAdjacentHTML("beforeend", Object.keys(stLabel).filter(s => sts[s])
-    .map(s => `<option value="${s}">${esc(stLabel[s])} (${sts[s]})</option>`).join(""));
+  $("f-status").insertAdjacentHTML("beforeend", Object.keys(STATUS_LABEL).filter(s => sts[s])
+    .map(s => `<option value="${s}">${esc(STATUS_LABEL[s])} (${sts[s]})</option>`).join(""));
+}
+
+function renderTabs() {
+  const sts = DATA.summary.statuses || {};
+  $("tabs").innerHTML = STATUS_ORDER.map(status => {
+    const label = status ? STATUS_LABEL[status] : "All";
+    const count = status ? (sts[status] || 0) : DATA.emails.length;
+    return `<button class="tab ${activeStatus === status ? "active" : ""}" type="button" data-status="${status}">${esc(label)} ${count}</button>`;
+  }).join("");
+}
+
+function confidenceMeter(e) {
+  if (e.confidence == null) return `<span class="confidence"><span>-</span><span class="conf-track"><span class="conf-fill" style="width:0"></span></span></span>`;
+  const value = Math.max(0, Math.min(1, Number(e.confidence) || 0));
+  return `<span class="confidence"><span>${pct(value)}</span><span class="conf-track"><span class="conf-fill" style="width:${(value * 100).toFixed(0)}%"></span></span></span>`;
 }
 
 function apply() {
-  const cat = $("f-cat").value, st = $("f-status").value, q = $("f-q").value.trim().toLowerCase();
-  rows = DATA.emails.filter(e =>
-    (!cat || e.category === cat) && (!st || e.status === st) &&
-    (!q || e.email_id.toLowerCase().includes(q) || (e.subject || "").toLowerCase().includes(q) || (e.from || "").toLowerCase().includes(q)));
-  rows.sort((a, b) => (b.has_defect - a.has_defect) || a.email_id.localeCompare(b.email_id));
+  const cat = $("f-cat").value;
+  const st = activeStatus || $("f-status").value;
+  const q = $("f-q").value.trim().toLowerCase();
+  rows = DATA.emails.filter(e => {
+    const searchable = [e.email_id, e.subject, e.from, e.body, LABEL[e.category], statusText(e), fieldList(e)].join(" ").toLowerCase();
+    return (!cat || e.category === cat) && (!st || e.status === st) && (!q || searchable.includes(q));
+  });
+  rows.sort((a, b) =>
+    (Number(b.has_defect) - Number(a.has_defect)) ||
+    (Number(b.status === "NEEDS_REVIEW") - Number(a.status === "NEEDS_REVIEW")) ||
+    a.email_id.localeCompare(b.email_id)
+  );
 
   $("count").textContent = `${rows.length} of ${DATA.emails.length} emails`;
   $("empty").hidden = rows.length > 0;
   $("rows").innerHTML = rows.map((e, i) => `
     <tr tabindex="0" data-i="${i}">
       <td class="id">${esc(e.email_id.replace("email_", "#"))}</td>
-      <td class="subj">${esc(e.subject || "(no subject)")}</td>
+      <td class="subject"><strong>${esc(e.subject || "(no subject)")}</strong><span>${esc(e.from || "unknown sender")}</span></td>
       <td>${esc(LABEL[e.category] || e.category)}</td>
       <td>${statusChip(e)}</td>
-      <td class="flag">${e.defect_fields.length ? esc(e.defect_fields.map(f => FIELD[f] || f).join(", ")) : "—"}</td>
+      <td>${confidenceMeter(e)}</td>
+      <td class="fields">${fieldList(e) ? esc(fieldList(e)) : "-"}</td>
     </tr>`).join("");
 }
 
-function open(e) {
+function openEmail(e) {
   $("d-subject").textContent = e.subject || "(no subject)";
-  $("d-id").textContent = `${e.email_id} · from ${e.from || "unknown"}`;
-  const conf = e.confidence == null ? "—" : `${(e.confidence * 100).toFixed(0)}%`;
+  $("d-id").textContent = `${e.email_id} - from ${e.from || "unknown"}`;
   const fields = Object.keys(e.mismatches || {});
 
-  let html = `<dl class="kv">
-      <dt>Classified as</dt><dd>${esc(LABEL[e.category] || e.category)}</dd>
-      <dt>Confidence</dt><dd>${conf}</dd>
-      <dt>Result</dt><dd>${statusChip(e)}</dd>
-    </dl>`;
+  let html = `<div class="detail-grid">
+      <div class="detail-item"><span>Category</span><strong>${esc(LABEL[e.category] || e.category)}</strong></div>
+      <div class="detail-item"><span>Result</span><strong>${statusChip(e)}</strong></div>
+      <div class="detail-item"><span>Confidence</span><strong>${pct(e.confidence)}</strong></div>
+      <div class="detail-item"><span>Attachments</span><strong>${esc((e.attachments || []).length)}</strong></div>
+    </div>`;
 
   if (fields.length) {
-    html += `<h3 class="sec">Mismatched fields — SI is the reference</h3>
+    html += `<h3 class="sec">Mismatched fields - SI is the reference</h3>
       <table class="diff"><thead><tr><th>Field</th><th>Shipping Instruction</th><th>Draft Bill of Lading</th></tr></thead><tbody>` +
-      fields.map(f => `<tr><td class="f">${esc(FIELD[f] || f)}</td><td class="v">${esc(e.mismatches[f].si ?? "—")}</td><td class="v">${esc(e.mismatches[f].bl ?? "—")}</td></tr>`).join("") +
+      fields.map(f => `<tr><td class="f">${esc(FIELD[f] || f)}</td><td class="v">${esc(e.mismatches[f].si ?? "-")}</td><td class="v">${esc(e.mismatches[f].bl ?? "-")}</td></tr>`).join("") +
       `</tbody></table>`;
   } else if (e.category === "BL_COMPARISON" && e.status === "OK") {
-    html += `<h3 class="sec">Comparison</h3><p style="margin:0;color:var(--text-secondary)">No mismatch detected — all seven fields agree between the SI and the draft BL.</p>`;
+    html += `<h3 class="sec">Comparison</h3><p style="margin:0;color:var(--text-soft)">No mismatch detected. All seven tracked fields agree between the SI and the draft BL.</p>`;
   } else if (e.review_reason) {
-    html += `<h3 class="sec">Escalated</h3><p style="margin:0;color:var(--text-secondary)">${esc(REASON[e.review_reason] || e.review_reason)}. Sent for human review rather than guessed at.</p>`;
+    html += `<h3 class="sec">Human review</h3><p style="margin:0;color:var(--text-soft)">${esc(REASON[e.review_reason] || e.review_reason)}. The case is escalated with context instead of being guessed.</p>`;
+  }
+
+  if (e.attachments && e.attachments.length) {
+    html += `<h3 class="sec">Attachments</h3><p style="margin:0;color:var(--text-soft)">${esc(e.attachments.join(", "))}</p>`;
   }
 
   if (e.si_text || e.bl_text) {
@@ -321,14 +630,31 @@ function open(e) {
   $("dlg").showModal();
 }
 
-$("rows").addEventListener("click", ev => { const tr = ev.target.closest("tr[data-i]"); if (tr) open(rows[+tr.dataset.i]); });
+$("rows").addEventListener("click", ev => { const tr = ev.target.closest("tr[data-i]"); if (tr) openEmail(rows[+tr.dataset.i]); });
 $("rows").addEventListener("keydown", ev => {
   if (ev.key !== "Enter" && ev.key !== " ") return;
   const tr = ev.target.closest("tr[data-i]");
-  if (tr) { ev.preventDefault(); open(rows[+tr.dataset.i]); }
+  if (tr) { ev.preventDefault(); openEmail(rows[+tr.dataset.i]); }
+});
+$("tabs").addEventListener("click", ev => {
+  const btn = ev.target.closest("button[data-status]");
+  if (!btn) return;
+  activeStatus = btn.dataset.status;
+  $("f-status").value = activeStatus;
+  renderTabs();
+  apply();
 });
 $("d-close").addEventListener("click", () => $("dlg").close());
-["f-cat","f-status","f-q"].forEach(id => $(id).addEventListener("input", apply));
+$("dlg").addEventListener("click", ev => {
+  const box = $("dlg").getBoundingClientRect();
+  const inside = ev.clientX >= box.left && ev.clientX <= box.right && ev.clientY >= box.top && ev.clientY <= box.bottom;
+  if (!inside) $("dlg").close();
+});
+["f-cat","f-status","f-q"].forEach(id => $(id).addEventListener("input", () => {
+  if (id === "f-status") activeStatus = $("f-status").value;
+  renderTabs();
+  apply();
+}));
 $("theme").addEventListener("click", () => {
   const cur = document.documentElement.getAttribute("data-theme");
   const dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
@@ -340,10 +666,15 @@ fetch("report.json")
   .then(d => {
     DATA = d;
     $("stamp").textContent = "Run of " + new Date(d.generated_at).toLocaleString();
-    renderTiles(); renderBars(); renderFilters(); apply();
-    $("loading").hidden = true; $("app").hidden = false;
+    renderTiles();
+    renderBars();
+    renderFilters();
+    renderTabs();
+    apply();
+    $("loading").hidden = true;
+    $("app").hidden = false;
   })
-  .catch(err => { $("loading").textContent = "Could not load report.json — " + err.message; });
+  .catch(err => { $("loading").textContent = "Could not load report.json - " + err.message; });
 </script>
 </body>
 </html>
