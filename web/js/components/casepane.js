@@ -24,22 +24,37 @@ export function emailAndDocuments(kase, api) {
   );
 }
 
-/** "Retry this email" for a case that failed on the model API, with the outcome said in place. */
-export function retryButton(row, { api, ctx }) {
-  const button = h("button", { class: "btn", type: "button" }, icon("refresh"), "Retry this email");
-  button.addEventListener("click", async () => {
+// What the last retry of each email said, so a failed-again note survives the list redrawing.
+const retryNotes = new Map();
+
+/**
+ * Retry just this one email (not every failed one), with the outcome said in place.
+ * Returns a small wrapper holding the button and the note beside it.
+ */
+export function retryButton(row, { api, ctx }, { label = "Retry this email", small = false } = {}) {
+  const button = h("button", { class: `btn${small ? " small" : ""}`, type: "button", title: `Run ${row.email_id} again` }, icon("refresh"), label);
+  const note = h("span", { class: "muted retry-note", title: retryNotes.get(row.email_id) ?? null }, retryNotes.get(row.email_id) ?? "");
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
     button.disabled = true;
+    button.lastChild.textContent = "Retrying…";
+    note.textContent = "";
     try {
       const result = await api.retry(row.email_id, ctx.getReport().scope);
+      if (result.failed) retryNotes.set(row.email_id, "Failed again on the model API, often a rate limit or an exhausted quota.");
+      else retryNotes.delete(row.email_id);
       announce(result.failed ? "It failed again on the model API." : "Retried.");
-      await ctx.onRetried();
+      await ctx.onRetried(); // redraws with the new result
     } catch (err) {
       announce(err.message);
+      retryNotes.set(row.email_id, err.message);
+      note.textContent = err.message;
+      note.title = err.message;
       button.disabled = false;
-      button.after(h("span", { class: "muted", style: "margin-left:8px" }, err.message));
+      button.lastChild.textContent = label;
     }
   });
-  return button;
+  return h("span", { class: "retry" }, button, note);
 }
 
 /** A link to the same email in the other tab. */

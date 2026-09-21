@@ -543,3 +543,8 @@ table.docs-table { width: 100%; border-collapse: collapse; font-size: var(--text
 .delegated { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: 10px var(--space-3); border-radius: var(--radius); background: var(--surface-2); font-size: var(--text-sm); }
 .delegated svg { width: 16px; height: 16px; flex: none; }
 .delegated .btn { margin-left: auto; }
+
+/* ---- retry one email ---- */
+.retry { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; }
+.retry-note { font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.retry .btn:disabled { opacity: 0.6; cursor: default; }

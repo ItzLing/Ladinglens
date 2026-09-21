@@ -193,7 +193,11 @@ append-only, overlaid on the model output.
   the emails in flight finish), **Run N new** for the emails with no saved result yet (new
   ones added to the inbox, or ones a stopped run did not reach), **Retry N** for the failed
   ones, and **Start over**. Start over confirms in plain words that it replaces the saved
-  results (a backup copy is kept) and spends model quota. It is deliberately compact: the
+  results (a backup copy is kept) and spends model quota.
+  **Retry N** re-runs every failed email. To re-run just one, use the **Retry** button on that
+  email: on its row in the Home queue (failed rows only, shown when the queue is filtered to
+  Needs review), or "Retry this email" in its Parsing or Review detail. A retry that fails again
+  says so beside the button instead of only announcing it. It is deliberately compact: the
   owner will confirm with a friend what it should do.
 - Under 800 px the rail becomes a bottom bar and the two panes stack, with a Back control.
 - Routes: `#/` Home, `#/parsing`, `#/parsing/{id}`, `#/review`, `#/report`, `#/data`.

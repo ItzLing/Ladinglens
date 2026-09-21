@@ -1,8 +1,9 @@
 import { h, clear } from "../util/dom.js";
 import { CATEGORY_ORDER, categoryLabel, formatConfidence, formatTime } from "../util/format.js";
-import { PRIORITY_LABEL, needsPerson, nextStep, priorityOf, sortByPriority } from "../store.js";
+import { PRIORITY_LABEL, isFailed, needsPerson, nextStep, priorityOf, sortByPriority } from "../store.js";
 import { routeHash } from "../router.js";
 import { labelChip, statusChipEl } from "../components/chips.js";
+import { retryButton } from "../components/casepane.js";
 
 const STEPS = [
   ["01", "Classify", "Sort inbox messages by intent."],
@@ -76,7 +77,8 @@ function categoryBars(summary = {}) {
     }));
 }
 
-function queueRows(rows) {
+/** `retry(row)` gives the Retry control for a failed row, or null when there is none. */
+function queueRows(rows, retry) {
   if (!rows.length) {
     return h("tbody", {}, h("tr", {}, h("td", { colspan: "8", class: "home-table-empty" }, "No emails match these filters.")));
   }
@@ -91,7 +93,9 @@ function queueRows(rows) {
         h("td", {}, labelChip(row.category)),
         h("td", {}, statusChipEl(row) ?? h("span", { class: "chip ok" }, "OK")),
         h("td", {}, formatConfidence(row.confidence)),
-        h("td", { class: "home-next", title: nextStep(row) }, nextStep(row)),
+        isFailed(row) && retry(row)
+          ? h("td", { class: "home-next" }, retry(row))
+          : h("td", { class: "home-next", title: nextStep(row) }, nextStep(row)),
         h("td", { class: "home-flagged" }, (row.defect_fields ?? []).join(", ") || "-"),
       ));
     }),
@@ -102,7 +106,10 @@ function option(value, label, selected) {
   return h("option", { value, selected: selected ? true : null }, label);
 }
 
-export function mountHome(root, { getReport, api }) {
+export function mountHome(root, ctx) {
+  const { getReport, api } = ctx;
+  // a failed row gets its own Retry, which re-runs that one email; the demo is read-only
+  const retryFor = (row) => (api.mode === "static" ? null : retryButton(row, { api, ctx }, { label: "Retry", small: true }));
   const filters = { q: "", category: "", status: "" };
   const shell = h("div", { class: "page wide home-dashboard" });
   clear(root).append(shell);
@@ -200,7 +207,7 @@ export function mountHome(root, { getReport, api }) {
             h("th", {}, "Confidence"),
             h("th", {}, "Next step"),
             h("th", {}, "Fields flagged"))),
-          queueRows(rows))));
+          queueRows(rows, retryFor))));
   }
 
   function render() {

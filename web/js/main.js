@@ -65,7 +65,7 @@ function mountTab() {
   drawHeader(app.report?.version ?? app.version);
 
   const ctx = { api: app.api, getReport: () => app.report };
-  if (tab === "home") app.view = mountHome(contentEl, ctx);
+  if (tab === "home") app.view = mountHome(contentEl, { ...ctx, onRetried: reload });
   else if (tab === "parsing") {
     app.view = mountParsing(contentEl, { ...ctx, view: app.parsing, onRetried: reload });
     app.view.setId(id);
