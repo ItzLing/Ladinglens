@@ -53,6 +53,17 @@ as a small, separate step — don't fold it into an unrelated feature commit.
   (JavaScript, Node 22+). They mock OCR, the LLM calls and MongoDB, so they need no API key,
   no Tesseract and no database.
 
+## Reference material
+
+`reference/` holds worked examples and how-tos for the team; for now that is
+`reference/claude-as-llm/`, which runs the whole pipeline with Claude as the model. It is tracked
+in git while the project is being built, so everyone can read and run it, and it is never part of
+the deployed image (`.dockerignore`).
+
+**After the project is deployed**, stop tracking it: uncomment `reference/` at the bottom of
+`.gitignore` and run `git rm -r --cached reference/`, in its own commit. The files stay on disk;
+git just stops tracking them. Do the same for any new folder added under `reference/`.
+
 ## Commit message convention
 
 Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): message`.
