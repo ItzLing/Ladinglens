@@ -42,6 +42,8 @@ class ComparisonResult(BaseModel):
     mismatches: dict[str, dict[str, Optional[str]]] = {}
     needs_review: bool = False
     review_reason: Optional[ReviewReason] = None
+    # Internal operational detail; deliberately absent from evaluator output.
+    failure_stage: Optional[str] = None
 
     def to_submission(self) -> dict:
         """Map to the hackathon's sample_submission.json shape."""
