@@ -165,7 +165,7 @@ def process(payload: ProcessRequest):
 
     if payload.subject or payload.body:
         try:
-            category, confidence = classify_email(
+            category, confidence, summary = classify_email(
                 {
                     "subject": payload.subject,
                     "from": payload.sender,
@@ -182,6 +182,7 @@ def process(payload: ProcessRequest):
             )
             result["category"] = category.value
             result["confidence"] = confidence
+            result["summary"] = summary
         except (LLMUnavailableError, ValueError, KeyError) as exc:
             raise HTTPException(status_code=502, detail=f"classification failed: {exc}")
 

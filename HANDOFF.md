@@ -356,3 +356,74 @@ from before the entries below.
 - An untracked `results.jsonl` sits at the repo root. It is not from this session; check it.
 
 **Synced through:** `543e006` (this entry is committed after it)
+
+---
+
+## 2026-09-21 — Claude Code + Colt (0.9594, deployability, Excel, inbox simulation)
+
+**Score: 0.8515 -> 0.9594.** End-to-end 38/46 -> **46/46**; defect precision 0.793 ->
+0.979; field-level F1 0.791 -> 0.993.
+
+**What changed:**
+- `app/pipeline/compare.py`: a party field now matches when one side is the other plus
+  extra text. Restricted to `shipper`, `consignee`, `notify_party`.
+- `scripts/recompare.py`: re-applies stage 3 to a finished run **offline**.
+- `scripts/export_excel.py`: a run -> `results/ladinglens.xlsx`, two sheets.
+- `scripts/feed_inbox.py`: drips dataset emails into `data/live/` so a poller has real
+  arrivals to find.
+- `POST /process` + `Dockerfile` + `.dockerignore`: deployable without the dataset.
+- `.gitignore`: `ocr_cache/`, `data/live/`, and every `.env.*` variant.
+- `README.md`: new sections for Excel, inbox simulation and deploying; bash **and**
+  PowerShell for every command.
+
+**Why the comparison fix mattered most:**
+- All 8 end-to-end failures were routed *and* flagged correctly -- they failed only on
+  the exact field set. Every spurious field was a party where one document carried the
+  address and the other did not (`KTP CO., LTD` vs `KTP CO., LTD, KTP BLDG, 36 ...`).
+  Same party, two levels of detail, counted as a discrepancy.
+- **This corrected an earlier wrong diagnosis in this log.** The `SI_REQUEST` /
+  `BL_COMPARISON` confusion was assumed to be the remaining gap; it is not. All 46 gold
+  defect emails were already classified correctly. That confusion costs stage 1
+  (weight 0.3) only -- worth fixing, but it was never the end-to-end blocker.
+
+**Decisions made:**
+- The prefix rule is **not** applied to non-party fields: on `container_count` it would
+  let "3" match "30" and hide a real defect. Verified against ground truth: fixes all 8,
+  breaks none of the 38 already passing.
+- `recompare.py` exists because stage 3 is deterministic and the per-field values are
+  already in `results.jsonl` -- a comparison change can be re-scored for free. It is
+  only valid when a change *relaxes* comparison; fields equal at run time are not
+  recorded. The docstring says so.
+- Excel is generated **deterministically, with no LLM call**. A model was proposed for
+  it; every value is already captured, so asking one to restate it would spend quota and
+  let hallucinated values into a file that looks authoritative.
+- The inbox feeder copies real files into a folder the ordinary loader reads, rather
+  than adding a fake `Inbox` class -- no demo-only code path in the pipeline.
+  Attachments land before the email JSON, or the pipeline banks `missing_attachment`.
+- The image ships `web/` (the app serves the UI at `/`, and Render health-checks `/`)
+  but never the dataset.
+
+**Traps worth remembering:**
+- **`mongomock` reads the `MONGODB` env var as a version string.** The MongoDB installer
+  sets it to a bin path, so `int()` fails on `'C:\Program Files\MongoDB\Server\8'`.
+  8 tests fail on any machine with MongoDB installed; CI is unaffected. Forcing
+  `MONGODB=5.0.5` before import gives **132 passed, 0 failed**. Fix belongs in a
+  `conftest.py` pinning `mongomock.SERVER_VERSION`.
+- **`web/report.json` is a committed generated file.** It resolves to whoever's snapshot
+  git picks in a merge, and goes stale after every run -- it showed 64 escalations
+  instead of 35 for exactly this reason. Run `python web/build_report.py` after any run
+  or merge. It only matters in static mode; a served instance reads `/api/report` live.
+- Git Bash cannot unset Windows-level environment variables for a child Python process
+  (`env -u` and inline assignment both fail); set them inside Python instead.
+
+**Open questions / next steps:**
+- `BL_COMPARISON` recall 0.67 / `SI_REQUEST` precision 0.64 -- 68 of 83 classification
+  errors are that one confusion. All 68 missed emails say "draft BL" *and* "for
+  checking"; none say "shipping instruction" or "please find". The classify prompt's
+  "usually with SI + draft BL attached" is what rejects the 94 attachment-less ones.
+  Stage 1 is weight 0.3, so the ceiling here is roughly 0.99.
+- The Docker image has **never been built** -- the daemon was down throughout. Render
+  may be its first real build.
+- `HANDOFF.md` is now 20 entries against `AGENT.md`'s ~5. Archiving is overdue.
+
+**Synced through:** `fb16662`

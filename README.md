@@ -213,6 +213,74 @@ per run). The Database tab shows both, read-only, and never shows the credential
 `MONGODB_URI` the app simply uses the files. Note: the MongoDB support is tested against an
 in-memory fake, and has not yet been run against a real server.
 
+## Exporting to Excel
+
+The operations team works in spreadsheets, so a run can be handed over as one:
+
+```bash
+python scripts/export_excel.py              # -> results/ladinglens.xlsx
+python scripts/export_excel.py --sample     # the ?limit= run instead
+```
+
+```powershell
+python scripts\export_excel.py
+python scripts\export_excel.py --sample
+```
+
+Two sheets, both with frozen headers and autofilters: **Inbox** is one row per email
+(sender, subject, classification, result, why escalated), and **Mismatches** is one row
+per flagged field with the SI and BL values side by side. Mismatch rows are tinted red
+and escalations amber, so the sheet is scanned rather than read.
+
+It reads through the same `app.api.report()` the dashboard uses, so the two can never
+disagree, and it makes **no API calls** -- every value was already decided by the run.
+
+## Simulating an inbox
+
+The dataset is a fixed set of files, so a poller finds nothing new after its first pass.
+To watch the pipeline react to arrivals, drip emails into a staging folder:
+
+```bash
+python scripts/feed_inbox.py --reset               # empty the staging folder
+python scripts/feed_inbox.py --batch 3 --every 60  # 3 every 60s until done
+```
+
+Point the pipeline at it and run the poller alongside:
+
+```bash
+# .env
+INBOX_SOURCE=data/live
+```
+
+Nothing is faked inside the app: the feeder copies real records into `data/live/`, and
+the ordinary `Inbox` loader discovers them the way it would a real mail drop.
+Attachments are copied **before** the email JSON, so the pipeline never sees an email
+whose documents have not landed and bank `missing_attachment` as a verdict.
+
+Point `INBOX_SOURCE` back at the full dataset before scoring -- `score_cli.py` grades
+against all 520 emails, so a partial staging folder reads as a catastrophic regression.
+
+## Deploying
+
+`Dockerfile` builds a container that serves the API and the web UI. It installs
+`tesseract-ocr` and `poppler-utils`, because `pytesseract` is only a wrapper and OCR
+would otherwise fail in the container while working locally.
+
+```bash
+docker build -t ladinglens .
+docker run --rm -p 8000:8000 --env-file .env ladinglens
+```
+
+The dataset is deliberately **not** in the image -- `.dockerignore` excludes `data/*`
+except `loader.py`, so organizer material can never reach a public container. That means
+`POST /run` cannot work there. `POST /process` is the deployed path: it takes the email
+and both documents in the request body and needs nothing on disk.
+
+On Render: New > Web Service, connect the repo, runtime **Docker**, health check `/`.
+Set `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` and `LLM_MAX_TOKENS` in their dashboard,
+and leave `INBOX_SOURCE` unset. Free instances sleep after ~15 minutes idle and take
+~50s to wake, so warm the URL before demoing.
+
 ## Plugging in the hackathon dataset
 
 The bundle lives in [`data/`](data) and is gitignored -- it carries `ground_truth.json`
@@ -244,6 +312,11 @@ app/
     extract.py            # stage 2: the fallback ladder -> ShipmentFields + field issues
     compare.py             # stage 3: SI vs BL -> mismatches (deterministic, no LLM)
     run.py                  # orchestrator, checkpointing, decides needs_review
+scripts/
+  poll.py               # polls /run?resume=true on an interval
+  recompare.py           # re-applies stage 3 offline, without spending API quota
+  export_excel.py        # a finished run -> .xlsx for the operations team
+  feed_inbox.py          # drips emails into data/live/ to simulate arrivals
 results/                 # everything a run writes (only its README is tracked)
 tests/
   test_*.py               # Python tests, offline (OCR, LLM and MongoDB mocked)
