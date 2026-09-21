@@ -242,7 +242,7 @@ function renderTiles() {
   if (r.processing_error) {
     note = `${r.processing_error} ${plural(r.processing_error)} could not be processed because the model API failed (rate limits), not because of anything in the documents. They are escalated rather than guessed at, and can be retried without re-running the rest.`;
   } else if (r.unreadable) {
-    note = `${r.unreadable} ${plural(r.unreadable)} carry PDF, Word or Excel attachments, which this version does not parse yet — it reads plain-text documents only. Rather than guess at their contents, it escalates them for a human, as it does whenever it cannot complete a step confidently.`;
+    note = `${r.unreadable} ${plural(r.unreadable)} carry an attachment that could not be read — a corrupt or empty file, or a type this version does not open. Rather than guess at its contents, it escalates them for a human, as it does whenever it cannot complete a step confidently.`;
   }
   if (note) { $("banner").hidden = false; $("banner").textContent = note; }
 }
