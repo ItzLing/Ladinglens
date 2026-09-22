@@ -59,6 +59,33 @@ test("live requests are built with the right URLs and methods", async () => {
   assert.equal(api.pageUrl("email_003", "SI", 2), "api/emails/email_003/documents/SI/pages/2.png");
 });
 
+test("corrections and delegations post JSON and delete cleanly", async () => {
+  const calls = [];
+  const api = await createApi(async (url, options) => {
+    calls.push([url, options?.method ?? "GET", options?.body ? JSON.parse(options.body) : null]);
+    return ok({ email_id: "email_004" });
+  });
+  calls.length = 0;
+  await api.saveCorrection("email_004", { fields: { shipper: "ACME" }, notes: "ok", updated_at: "t" });
+  await api.clearCorrection("email_004");
+  await api.delegateCase("email_004", { to: "Priya" });
+  await api.takeBackCase("email_004");
+  assert.deepEqual(calls, [
+    ["api/emails/email_004/correction?scope=auto", "POST", { fields: { shipper: "ACME" }, notes: "ok", updated_at: "t" }],
+    ["api/emails/email_004/correction?scope=auto", "DELETE", null],
+    ["api/emails/email_004/delegate?scope=auto", "POST", { to: "Priya" }],
+    ["api/emails/email_004/delegate?scope=auto", "DELETE", null],
+  ]);
+});
+
+test("the static adapter refuses to save corrections or delegations", async () => {
+  const api = await createApi(async () => { throw new TypeError("x"); });
+  await assert.rejects(api.saveCorrection("e1", { fields: {}, notes: "" }), /read-only demo/);
+  await assert.rejects(api.clearCorrection("e1"), /read-only demo/);
+  await assert.rejects(api.delegateCase("e1", { to: "Priya" }), /read-only demo/);
+  await assert.rejects(api.takeBackCase("e1"), /read-only demo/);
+});
+
 test("a failed request carries the server's reason", async () => {
   let live = true;
   const api = await createApi(async () => (live ? ok({}) : fail(409, { detail: "a run is already in progress" })));

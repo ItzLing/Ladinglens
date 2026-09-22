@@ -88,7 +88,7 @@ class ApiCase(unittest.TestCase):
 class StatusAndReportTests(ApiCase):
     def test_status_says_idle_and_names_the_version_and_storage(self):
         body = self.client.get("/api/status").json()
-        self.assertEqual((body["version"], body["running"], body["storage"]), ("0.0.1", False, "files"))
+        self.assertEqual((body["version"], body["running"], body["storage"]), ("1.0.0", False, "files"))
 
     def test_status_reports_progress_while_a_run_holds_the_lock(self):
         self.save("sample", record("email_001", "SPAM", "OK"), record("email_002", "SPAM", "OK"))
@@ -245,6 +245,55 @@ class RetryTests(ApiCase):
     def test_retrying_an_unknown_email_is_a_404_and_frees_the_lock(self):
         self.assertEqual(self.client.post("/api/emails/email_999/retry").status_code, 404)
         self.assertFalse(run_state.lock.locked())
+
+
+class CorrectionAndDelegationTests(ApiCase):
+    def test_a_correction_is_saved_and_shows_up_in_the_case_and_the_report(self):
+        self.full_run()
+        payload = {"fields": {"shipper": "ACME LTD"}, "notes": "confirmed by phone", "updated_at": "2026-01-01T00:00:00+00:00"}
+        body = self.client.post("/api/emails/email_003/correction", json=payload).json()
+        self.assertEqual(body["correction"], payload)
+        case = self.client.get("/api/emails/email_003").json()
+        self.assertEqual(case["record"]["correction"], payload)
+
+    def test_an_omitted_updated_at_is_filled_in_by_the_server(self):
+        self.full_run()
+        body = self.client.post("/api/emails/email_003/correction", json={"fields": {}, "notes": ""}).json()
+        self.assertTrue(body["correction"]["updated_at"])
+
+    def test_a_correction_for_an_unknown_email_is_a_404(self):
+        self.full_run()
+        self.assertEqual(self.client.post("/api/emails/email_999/correction", json={}).status_code, 404)
+
+    def test_a_correction_for_an_email_with_no_result_is_a_404(self):
+        self.assertEqual(self.client.post("/api/emails/email_001/correction", json={}).status_code, 404)
+
+    def test_clearing_a_correction_removes_it(self):
+        self.full_run()
+        self.client.post("/api/emails/email_003/correction", json={"fields": {"shipper": "X"}, "notes": ""})
+        body = self.client.delete("/api/emails/email_003/correction").json()
+        self.assertIsNone(body["correction"])
+        case = self.client.get("/api/emails/email_003").json()
+        self.assertNotIn("correction", case["record"])
+
+    def test_a_delegation_is_saved_and_shows_up_in_the_case(self):
+        self.full_run()
+        body = self.client.post("/api/emails/email_003/delegate", json={"to": "Priya"}).json()
+        self.assertEqual(body["delegation"]["to"], "Priya")
+        case = self.client.get("/api/emails/email_003").json()
+        self.assertEqual(case["record"]["delegation"]["to"], "Priya")
+
+    def test_a_blank_delegate_name_is_rejected(self):
+        self.full_run()
+        self.assertEqual(self.client.post("/api/emails/email_003/delegate", json={"to": "   "}).status_code, 422)
+
+    def test_taking_a_case_back_clears_the_delegation(self):
+        self.full_run()
+        self.client.post("/api/emails/email_003/delegate", json={"to": "Priya"})
+        body = self.client.delete("/api/emails/email_003/delegate").json()
+        self.assertIsNone(body["delegation"])
+        case = self.client.get("/api/emails/email_003").json()
+        self.assertNotIn("delegation", case["record"])
 
 
 class DatabaseTests(ApiCase):

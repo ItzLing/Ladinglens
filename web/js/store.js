@@ -269,6 +269,8 @@ export function caseBanner(record, category) {
       missing_value: `${plural(n, "field", "fields")} could not be trusted, so this case needs a person.`,
       unreadable: "A document could not be read, so nothing was compared.",
       missing_attachment: "The SI or the BL is missing, so nothing was compared.",
+      ambiguous_attachment: "More than one file matches the SI or the BL, so this case needs a person to say which one is real.",
+      wrong_doc_type: "An attachment does not look like an SI or a BL, so this case needs a person to find the real document.",
       low_confidence: "The system was not sure this is a document check, so it is waiting for a person.",
     }[reason] ?? "This case needs a person.";
     return { kind: "review", icon: "alert", text };

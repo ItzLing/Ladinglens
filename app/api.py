@@ -7,7 +7,14 @@
     POST /api/emails/{id}/retry            run the pipeline again for one email
     GET  /api/db/status                    the MongoDB explorer
     GET  /api/db/collections/{name}
+    POST /api/emails/{id}/correction       save a reviewer's corrected field values
+    DELETE /api/emails/{id}/correction     clear a saved correction
+    POST /api/emails/{id}/delegate         hand a case to a named person
+    DELETE /api/emails/{id}/delegate       take a delegated case back
 
+A correction or delegation is appended to the same checkpoint as any other result,
+under a "correction" / "delegation" key on the record, so it survives in
+results.jsonl and is picked up by report.json / output.json on the next build.
 Nothing here changes a verdict except the retry, which re-runs the pipeline.
 """
 import sys
@@ -17,6 +24,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Response
+from pydantic import BaseModel
 
 from app import __version__, run_state
 from app.paths import DATA_DIR, inbox_source
@@ -226,6 +234,65 @@ def retry(email_id: str, scope: str = Query("auto")):
                 "review_reason": record["review_reason"], "failed": is_failed(record)}
     finally:
         run_state.lock.release()
+
+
+class CorrectionIn(BaseModel):
+    fields: dict[str, str] = {}
+    notes: str = ""
+    updated_at: Optional[str] = None
+
+
+class DelegationIn(BaseModel):
+    to: str
+
+
+def _record_for_write(email_id: str, scope: str) -> tuple[dict, str]:
+    """The current record for `email_id`, and the scope it actually lives in."""
+    if _emails().get(email_id) is None:
+        raise HTTPException(status_code=404, detail=f"no such email {email_id}")
+    records, used, _ = _records(scope)
+    if email_id not in records:
+        raise HTTPException(status_code=404, detail=f"no result for {email_id}")
+    return dict(records[email_id]), used
+
+
+@router.post("/emails/{email_id}/correction")
+def save_correction(email_id: str, payload: CorrectionIn, scope: str = Query("auto")):
+    record, used = _record_for_write(email_id, scope)
+    record["correction"] = {
+        "fields": payload.fields,
+        "notes": payload.notes,
+        "updated_at": payload.updated_at or datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    get_store().checkpoint(used).append(record)
+    return {"email_id": email_id, "scope": used, "correction": record["correction"]}
+
+
+@router.delete("/emails/{email_id}/correction")
+def clear_correction(email_id: str, scope: str = Query("auto")):
+    record, used = _record_for_write(email_id, scope)
+    record.pop("correction", None)
+    get_store().checkpoint(used).append(record)
+    return {"email_id": email_id, "scope": used, "correction": None}
+
+
+@router.post("/emails/{email_id}/delegate")
+def save_delegation(email_id: str, payload: DelegationIn, scope: str = Query("auto")):
+    to = payload.to.strip()
+    if not to:
+        raise HTTPException(status_code=422, detail="to must not be empty")
+    record, used = _record_for_write(email_id, scope)
+    record["delegation"] = {"to": to, "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    get_store().checkpoint(used).append(record)
+    return {"email_id": email_id, "scope": used, "delegation": record["delegation"]}
+
+
+@router.delete("/emails/{email_id}/delegate")
+def clear_delegation(email_id: str, scope: str = Query("auto")):
+    record, used = _record_for_write(email_id, scope)
+    record.pop("delegation", None)
+    get_store().checkpoint(used).append(record)
+    return {"email_id": email_id, "scope": used, "delegation": None}
 
 
 @router.get("/db/status")

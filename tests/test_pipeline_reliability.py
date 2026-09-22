@@ -282,6 +282,86 @@ class PipelineReliabilityTests(unittest.TestCase):
         self.assertEqual(result.review_reason, ReviewReason.MISSING_ATTACHMENT)
         self.assertEqual(result.failure_stage, "attachment_identification")
 
+    def test_more_than_one_si_candidate_is_ambiguous_not_a_silent_pick(self):
+        email = {
+            "email_id": "two_si",
+            "attachments": [
+                "attachments/two_si_SI.txt",
+                "attachments/two_si_SI_revised.txt",
+                "attachments/two_si_BL.txt",
+            ],
+        }
+
+        with patch.object(
+            run,
+            "classify_email",
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
+        ):
+            with patch.object(run, "extract_document") as extract:
+                result = run.process_email(email, FakeInbox([email]))
+
+        extract.assert_not_called()
+        self.assertEqual(result.review_reason, ReviewReason.AMBIGUOUS_ATTACHMENT)
+        self.assertEqual(result.failure_stage, "attachment_identification")
+
+    def test_more_than_one_bl_candidate_is_ambiguous_not_a_silent_pick(self):
+        email = {
+            "email_id": "two_bl",
+            "attachments": [
+                "attachments/two_bl_SI.txt",
+                "attachments/two_bl_BL_draft.txt",
+                "attachments/two_bl_BL_final.txt",
+            ],
+        }
+
+        with patch.object(
+            run,
+            "classify_email",
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
+        ):
+            with patch.object(run, "extract_document") as extract:
+                result = run.process_email(email, FakeInbox([email]))
+
+        extract.assert_not_called()
+        self.assertEqual(result.review_reason, ReviewReason.AMBIGUOUS_ATTACHMENT)
+        self.assertEqual(result.failure_stage, "attachment_identification")
+
+    def test_a_single_si_and_bl_candidate_is_not_ambiguous(self):
+        email = comparison_email("single_pair")
+
+        with patch.object(
+            run,
+            "classify_email",
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
+        ):
+            with patch.object(
+                run,
+                "extract_document",
+                return_value=ExtractionResult(file="document", fields=ShipmentFields()),
+            ) as extract:
+                run.process_email(email, FakeInbox([email]))
+
+        self.assertEqual(extract.call_count, 2)
+
+    def test_a_document_that_reads_like_an_invoice_is_wrong_doc_type(self):
+        email = comparison_email("wrong_type")
+
+        with patch.object(
+            run,
+            "classify_email",
+            return_value=(EmailCategory.BL_COMPARISON, 0.9, None),
+        ):
+            with patch.object(
+                run,
+                "extract_document",
+                side_effect=run.WrongDocTypeError("looks like a Commercial Invoice"),
+            ) as extract:
+                result = run.process_email(email, FakeInbox([email]))
+
+        self.assertEqual(extract.call_count, 1)
+        self.assertEqual(result.review_reason, ReviewReason.WRONG_DOC_TYPE)
+        self.assertEqual(result.failure_stage, "si_extraction")
+
     def test_comparison_failure_becomes_controlled_review(self):
         email = comparison_email("email_compare")
         fields = ShipmentFields(

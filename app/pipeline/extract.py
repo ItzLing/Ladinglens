@@ -77,6 +77,24 @@ _FIELD_GUIDE = {
 
 FIELD_NAMES = list(ShipmentFields.model_fields)
 
+# Headers of the other document types this dataset's "BL" attachments sometimes
+# actually are (commercial invoice, packing list, certificate of origin), instead
+# of an SI or a draft BL. Checked before the extraction ladder runs, so a wrong
+# attachment goes to a person as wrong_doc_type instead of missing_value.
+_WRONG_DOC_MARKERS = ("COMMERCIAL INVOICE", "PACKING LIST", "CERTIFICATE OF ORIGIN")
+
+
+class WrongDocTypeError(ValueError):
+    """The document's own text says it is not an SI or a BL at all."""
+
+
+def _wrong_doc_type(text: str) -> Optional[str]:
+    upper = text.upper()
+    for marker in _WRONG_DOC_MARKERS:
+        if marker in upper:
+            return marker
+    return None
+
 # Tesseract word confidence (0-100) below which a field is not trusted. Not yet
 # calibrated against real scans -- see HANDOFF.md.
 DEFAULT_OCR_MIN_CONFIDENCE = 80.0
@@ -296,4 +314,9 @@ def extract_document(inbox, path: str, label: str) -> ExtractionResult:
     document = load_document(inbox, path)
     if document.scanned:
         return _extract_scanned(document, label)
+    marker = _wrong_doc_type(document.text)
+    if marker is not None:
+        raise WrongDocTypeError(
+            f"{path} reads like a {marker.title()}, not an SI/BL"
+        )
     return _extract_text(document, label)

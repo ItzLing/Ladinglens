@@ -15,6 +15,7 @@ class EmailCategory(str, Enum):
 
 class ReviewReason(str, Enum):
     WRONG_DOC_TYPE = "wrong_doc_type"
+    AMBIGUOUS_ATTACHMENT = "ambiguous_attachment"
     MISSING_ATTACHMENT = "missing_attachment"
     UNREADABLE = "unreadable"
     MISSING_VALUE = "missing_value"

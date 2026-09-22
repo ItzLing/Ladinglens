@@ -21,6 +21,7 @@ export const FIELDS = [
 export const REASON = {
   unreadable: "Document unreadable",
   missing_attachment: "Attachment missing",
+  ambiguous_attachment: "More than one candidate attachment",
   missing_value: "Value needs checking",
   wrong_doc_type: "Wrong document type",
   low_confidence: "Low confidence",
