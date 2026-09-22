@@ -372,6 +372,38 @@ class LoadDocumentTests(unittest.TestCase):
         self.assertFalse(document.scanned)
 
 
+class WrongDocTypeTests(unittest.TestCase):
+    class Inbox:
+        def __init__(self, data):
+            self.data = data
+
+        def read_bytes(self, _path):
+            return self.data
+
+    def test_a_commercial_invoice_named_bl_is_flagged_before_extraction(self):
+        text = b"COMMERCIAL INVOICE\nInvoice No: 12345\nAmount: 1000 USD\n"
+        with self.assertRaises(extract.WrongDocTypeError):
+            extract.extract_document(self.Inbox(text), "a/e_BL.txt", "BL")
+
+    def test_a_packing_list_named_si_is_flagged(self):
+        text = b"PACKING LIST\nCarton count: 40\n"
+        with self.assertRaises(extract.WrongDocTypeError):
+            extract.extract_document(self.Inbox(text), "a/e_SI.txt", "SI")
+
+    def test_a_certificate_of_origin_is_flagged(self):
+        text = b"CERTIFICATE OF ORIGIN\nCountry: India\n"
+        with self.assertRaises(extract.WrongDocTypeError):
+            extract.extract_document(self.Inbox(text), "a/e_BL.txt", "BL")
+
+    def test_a_real_bl_is_not_flagged(self):
+        text = b"Shipper: ACME LTD\nGross Weight: 131,058 KG\n"
+        with mock.patch.object(
+            extract, "extract_fields", return_value=ShipmentFields(shipper="ACME LTD")
+        ):
+            result = extract.extract_document(self.Inbox(text), "a/e_BL.txt", "BL")
+        self.assertEqual(result.fields.shipper, "ACME LTD")
+
+
 class RunIntegrationTests(unittest.TestCase):
     def process(self, si, bl):
         from app.pipeline import run

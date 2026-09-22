@@ -18,6 +18,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # keeps organizer material out of this image.
 COPY app/ ./app/
 COPY data/loader.py ./data/loader.py
+# /api/report joins results against the inbox records for subject and sender, so
+# without these the page renders nothing. The answer key and the generator are
+# excluded in .dockerignore and never reach the image.
+COPY data/data_v2/inbox/ ./data/data_v2/inbox/
+COPY data/data_v2/attachments/ ./data/data_v2/attachments/
 # app/main.py serves the UI at / -- without this the health check on / fails.
 COPY web/ ./web/
 

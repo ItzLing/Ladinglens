@@ -16,7 +16,7 @@ from app import run_state
 from app.llm_client import LLMUnavailableError, llm_request_context
 from app.pipeline.classify import classify_email
 from app.pipeline.compare import compare_fields
-from app.pipeline.extract import extract_document
+from app.pipeline.extract import WrongDocTypeError, extract_document
 from app.schema import (
     ComparisonResult,
     EmailCategory,
@@ -87,6 +87,17 @@ def _extract_document(
         # Provider failures say nothing about document quality.
         _log_stage_failure(email_id, stage, exc, "processing_error")
         return None, _processing_error(email_id, stage, **_without_id(base))
+    except WrongDocTypeError as exc:
+        # The attachment named "_SI"/"_BL" is actually an invoice, packing list or
+        # certificate of origin -- a person needs to find the real document, not
+        # have this one reported as missing values.
+        _log_stage_failure(email_id, stage, exc, "wrong_doc_type")
+        return None, ComparisonResult(
+            **base,
+            needs_review=True,
+            review_reason=ReviewReason.WRONG_DOC_TYPE,
+            failure_stage=stage,
+        )
     except (ValueError, OSError) as exc:
         # Malformed output and unreadable local files are permanent for this run.
         _log_stage_failure(email_id, stage, exc, "unreadable")
@@ -155,6 +166,16 @@ def process_email(email: dict, inbox) -> ComparisonResult:
             **base,
             needs_review=True,
             review_reason=ReviewReason.MISSING_ATTACHMENT,
+            failure_stage="attachment_identification",
+        )
+
+    if len(si_candidates) > 1 or len(bl_candidates) > 1:
+        # More than one file matches "_SI" or "_BL": picking [0] would silently
+        # guess. A person needs to say which attachment is the real one.
+        return ComparisonResult(
+            **base,
+            needs_review=True,
+            review_reason=ReviewReason.AMBIGUOUS_ATTACHMENT,
             failure_stage="attachment_identification",
         )
 

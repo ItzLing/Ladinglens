@@ -231,7 +231,12 @@ data/README.md
 
 # hackathon bundle -- never commit. data_v2/ carries ground_truth.json (the
 # answer key) and server/ carries the scorer; both are organizer-only material.
-data/data_v2/
+# The participant half of the bundle ships, so Render can build from the repo:
+# /api/report joins results against the inbox for subject and sender.
+# The answer key and the generator stay out -- those are organizer-only.
+data/data_v2/*
+!data/data_v2/inbox/
+!data/data_v2/attachments/
 data/server/
 data/docker-compose.yml
 

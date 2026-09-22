@@ -27,7 +27,11 @@ const enc = encodeURIComponent;
 
 function liveApi(fetchFn) {
   const get = (url) => request(fetchFn, url);
-  const post = (url) => request(fetchFn, url, { method: "POST" });
+  const post = (url, body) =>
+    request(fetchFn, url, body === undefined
+      ? { method: "POST" }
+      : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const del = (url) => request(fetchFn, url, { method: "DELETE" });
   return {
     mode: "live",
     status: () => get("api/status"),
@@ -38,6 +42,10 @@ function liveApi(fetchFn) {
     run: ({ limit = null, resume = false, newOnly = false } = {}) =>
       post(`run?resume=${resume}${newOnly ? "&new_only=true" : ""}${limit ? `&limit=${limit}` : ""}`),
     stop: () => post("api/run/stop"),
+    saveCorrection: (id, payload, scope = "auto") => post(`api/emails/${enc(id)}/correction?scope=${enc(scope)}`, payload),
+    clearCorrection: (id, scope = "auto") => del(`api/emails/${enc(id)}/correction?scope=${enc(scope)}`),
+    delegateCase: (id, payload, scope = "auto") => post(`api/emails/${enc(id)}/delegate?scope=${enc(scope)}`, payload),
+    takeBackCase: (id, scope = "auto") => del(`api/emails/${enc(id)}/delegate?scope=${enc(scope)}`),
     dbStatus: () => get("api/db/status"),
     dbDocs: (name, { emailId = "", limit = 25, skip = 0 } = {}) =>
       get(`api/db/collections/${enc(name)}?limit=${limit}&skip=${skip}${emailId ? `&email_id=${enc(emailId)}` : ""}`),
@@ -65,6 +73,10 @@ function staticApi(fetchFn) {
     retry: readOnly,
     run: readOnly,
     stop: readOnly,
+    saveCorrection: readOnly,
+    clearCorrection: readOnly,
+    delegateCase: readOnly,
+    takeBackCase: readOnly,
     dbStatus: async () => ({ backend: "static", configured: false, connected: false, collections: [], error: null }),
     dbDocs: readOnly,
   };

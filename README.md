@@ -402,8 +402,12 @@ node --test "tests/js/*.test.js"        # JavaScript (Node 22 or newer, no packa
 ## Current scope
 
 - `Dockerfile` is not built yet.
-- The **Review** and **Report** tabs are waiting on their designs. Until Review exists there
-  is no way to confirm or correct a case in the UI.
+- The **Review** and **Report** tabs are both built (`web/js/views/review.js`, `report.js`).
+  Review lets a person confirm or correct a case's fields and delegate it to someone else;
+  both are saved to the backend (`POST`/`DELETE /api/emails/{id}/correction` and
+  `/delegate`) and land in `results.jsonl`, so they show up in `report.json` / `output.json`
+  on the next build. The static, server-less demo (`web/report.json` on Vercel) keeps its
+  own copy in the browser's `localStorage` instead, since it has no backend to write to.
 - MongoDB support has only run against an in-memory fake, not a real server.
 - The OCR confidence threshold (`OCR_MIN_CONFIDENCE`) has not been calibrated against degraded
   scans; the dataset's own scans are clean.

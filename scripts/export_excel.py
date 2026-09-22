@@ -48,6 +48,7 @@ CATEGORY_LABEL = {
 REASON_LABEL = {
     "unreadable": "Document unreadable",
     "missing_attachment": "Attachment missing",
+    "ambiguous_attachment": "More than one candidate attachment",
     "missing_value": "Required value missing",
     "wrong_doc_type": "Wrong document type",
     "low_confidence": "Low classification confidence",
