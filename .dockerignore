@@ -1,6 +1,12 @@
-# The dataset and its scorer are organizer-only and must never enter an image.
-data/*
-!data/loader.py
+# Organizer-only material -- must never enter an image, even if a COPY widens.
+data/data_v2/ground_truth.json
+data/data_v2/sample_submission.json
+data/data_v2/*.py
+data/data_v2/README.md
+data/server/
+data/docker-compose.yml
+data/README.md
+data/live/
 
 # Run artifacts and caches -- regenerated, and stale copies would mislead.
 results/
@@ -15,8 +21,6 @@ web/__pycache__/
 
 scripts/
 tests/
-# worked examples for the team, never part of the image
-reference/
 .git/
 .env
 .env.*
