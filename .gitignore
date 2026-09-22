@@ -258,3 +258,5 @@ data/live/
 # After deploying, uncomment the next line and run `git rm -r --cached reference/` in its
 # own commit, so the folder stays on disk but is no longer tracked.
 # reference/
+
+deliverable/
