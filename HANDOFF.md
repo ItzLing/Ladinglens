@@ -540,3 +540,72 @@ from before the entries below.
   the repo root.
 
 **Synced through:** `e75d764` (this entry and the reference rule are committed after it)
+
+
+---
+
+## 2026-09-22 — Claude Code — Ling (code-review fixes: numeric compare, ambiguous attachments, review persistence)
+
+**What changed:**
+- **`compare_fields()` compares `container_count` and `gross_weight_kg` as numbers**, not
+  normalized strings (`app/pipeline/compare.py`). Reuses `validate.py`'s `_COUNT`/`_WEIGHT`
+  regexes to pull the leading number out of each side; if both sides parse, they are compared
+  as numbers (so `"6 x 40'HC"` matches `"6"`, and `"131,058.00 KG"` matches `"131058 KG"`); if
+  either side fails to parse, it falls back to the existing normalized-text comparison
+  unchanged. `_same_party` and the party-field handling are untouched. New dedicated
+  `tests/test_compare.py` (compare_fields had none before) covers both false-positive cases,
+  a genuine mismatch for each field, and the existing normalization behavior.
+- **More than one `_SI`/`_BL` candidate attachment is now `needs_review`**, not a silent
+  `[0]` pick (`app/pipeline/run.py`), under a new `ReviewReason.AMBIGUOUS_ATTACHMENT`.
+- **`wrong_doc_type` is wired up.** It sat unused in `schema.py` since it was added (see the
+  2026-09-21 entry above). `extract.py` now checks a non-scanned document's text for headers
+  of the other document types this dataset's mislabeled attachments turn out to be
+  (`COMMERCIAL INVOICE`, `PACKING LIST`, `CERTIFICATE OF ORIGIN`) before running the
+  extraction ladder, and raises `WrongDocTypeError` if one matches; `run.py` catches it ahead
+  of the generic `ValueError`/`unreadable` branch and reports `wrong_doc_type`. Confirmed
+  against a real case in the current `results/`: `email_501`'s body literally says "the second
+  attachment is a Commercial Invoice, not the draft BL." Scanned documents are not checked
+  (no text without running OCR first) — an acknowledged gap, not silently dropped.
+- **Review-tab corrections and delegations now persist to the backend.** New
+  `POST`/`DELETE /api/emails/{id}/correction` and `/delegate` (`app/api.py`) merge the
+  payload onto the current record and re-append it through the existing `Checkpoint`, so it
+  lands in `results.jsonl` and shows up in `report.json`/`output.json` on the next build.
+  `web/js/api.js`'s `liveApi()` grew matching methods; `web/js/views/review.js`'s save/clear/
+  delegate/take-back handlers call them, while still writing `localStorage` first so the UI
+  stays responsive and the static, server-less demo (`web/report.json` on Vercel, no backend)
+  keeps working exactly as before. On load, the form and the delegate box now prefer the
+  backend record's `correction`/`delegation` over the `localStorage` copy when both exist.
+  Verified live: saved a correction on `email_501` through the running app, confirmed it
+  landed in `results/results.jsonl` and reappeared after a full page reload, then cleared it.
+- **`README.md`'s "Current scope"** no longer says Review is waiting on its design or that
+  there is no way to confirm/correct a case — both tabs are built and corrections now persist.
+
+**Why:**
+- Found by manual code review, not reported by a user: two `compare.py` false positives, the
+  silent `[0]` pick on ambiguous attachments, the dead `wrong_doc_type` reason, and the
+  Review tab's corrections/delegations being UI-only (`localStorage`), which meant the
+  documented human-in-the-loop "confirm or correct, then update the report" behavior did not
+  actually update the report.
+
+**Decisions made:**
+- `wrong_doc_type` detection is a lightweight header-keyword check on non-scanned text, not a
+  model call — cheap, and enough to catch this dataset's known mislabeled attachments.
+  Extending it to scanned documents is left open (would need OCR before the check).
+- Delegation persists server-side the same way a correction does, since nothing in the ask
+  suggested it should stay client-side and the two flows share the same storage mechanism.
+- `tests/test_compare.py` lives at the top level (`tests/`), matching every other test file in
+  the project, not at `app/tests/` — there is no `app/tests/` directory and the test command
+  in `README.md` only discovers `tests/`.
+
+**Open questions / next steps:**
+- Scanned "BL" attachments that are actually another document type still fall through to
+  `missing_value` rather than `wrong_doc_type`, since the check only reads already-extracted
+  text.
+- The Review list's urgency/"Saved"/"Delegated" chips still read from the light report row's
+  `localStorage` state, not the full case record, since the report endpoint does not carry
+  `correction`/`delegation`. Only the open case pane reads the backend's copy. Fine for now;
+  would need `/api/report` to carry a flag if the list itself should reflect it.
+- Still open from earlier entries: the Home queue counter, `DESIGN.md` section 6.2, and MongoDB
+  support only run against an in-memory fake.
+
+**Synced through:** `c586481` (this entry is committed after it)

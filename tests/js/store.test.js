@@ -141,6 +141,7 @@ test("the banner says why a case is here, in plain words", () => {
   assert.match(banner({ status: "NEEDS_REVIEW", review_reason: "missing_attachment" }).text, /missing/);
   assert.match(banner({ status: "NEEDS_REVIEW", review_reason: "low_confidence" }).text, /not sure/);
   assert.match(banner({ status: "NEEDS_REVIEW", review_reason: "wrong_doc_type" }).text, /needs a person/);
+  assert.match(banner({ status: "NEEDS_REVIEW", review_reason: "ambiguous_attachment" }).text, /needs a person/);
 });
 
 test("a failure is never described as a verdict on the documents", () => {

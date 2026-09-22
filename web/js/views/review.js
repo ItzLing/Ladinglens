@@ -83,7 +83,9 @@ function downloadJson(name, data) {
 
 /**
  * Human Review tab. It is the holding area for cases the model could not finish.
- * Corrections are stored in localStorage so the static demo remains editable.
+ * Corrections and delegations are saved to the backend so they land in
+ * results.jsonl and the report; localStorage is kept alongside as the source
+ * for the static, server-less demo and as a fallback while a save is in flight.
  */
 export function mountReview(root, ctx) {
   const { api } = ctx;
@@ -170,7 +172,10 @@ export function mountReview(root, ctx) {
 
   function buildForm(row, kase) {
     const record = kase.record;
-    const correction = saved[row.email_id] ?? {};
+    // The backend record (persisted server-side) is the source of truth once it
+    // has one; localStorage remains the source for the static/offline demo and
+    // for a save still in flight.
+    const correction = record.correction ?? saved[row.email_id] ?? {};
     const fields = new Map();
     const note = h("textarea", { class: "review-note", rows: "5", placeholder: "Add reviewer notes, decision reason, or follow-up needed." }, correction.notes ?? "");
     const status = h("span", { class: "review-saved" }, correction.updated_at ? `Saved ${new Date(correction.updated_at).toLocaleString()}` : "Not saved yet");
@@ -218,20 +223,26 @@ export function mountReview(root, ctx) {
       };
     }
 
-    function save(event) {
+    async function save(event) {
       event.preventDefault();
-      saved = { ...saved, [row.email_id]: payload() };
+      const data = payload();
+      saved = { ...saved, [row.email_id]: data };
       if (!writeSaved(saved)) {
         announce("Could not save in this browser.");
         return;
       }
-      status.textContent = `Saved ${new Date(saved[row.email_id].updated_at).toLocaleString()}`;
+      status.textContent = `Saved ${new Date(data.updated_at).toLocaleString()}`;
       renderList();
       pane.markSelected();
-      announce("Correction saved.");
+      try {
+        await api.saveCorrection(row.email_id, data);
+        announce("Correction saved.");
+      } catch (err) {
+        announce(api.mode === "live" ? "Saved locally. Could not reach the server." : "Correction saved.");
+      }
     }
 
-    function clearOne() {
+    async function clearOne() {
       const next = { ...saved };
       delete next[row.email_id];
       saved = next;
@@ -239,6 +250,9 @@ export function mountReview(root, ctx) {
       announce("Saved correction cleared.");
       renderList();
       pane.renderDetail();
+      try {
+        await api.clearCorrection(row.email_id);
+      } catch { /* static demo: local-only */ }
     }
 
     function exportSaved() {
@@ -249,21 +263,24 @@ export function mountReview(root, ctx) {
     return form;
   }
 
-  /** Demo delegation: type a name, press Send. Nothing leaves the browser. */
-  function buildDelegate(row) {
-    const given = delegations[row.email_id];
+  /** Hand a case to a named person. Persisted server-side; nothing is emailed. */
+  function buildDelegate(row, kase) {
+    const given = kase.record.delegation ?? delegations[row.email_id];
     const box = h("div", { class: "section review-delegate" }, h("h3", {}, "Delegate this case"));
     if (given) {
       add(box,
         h("div", { class: "delegated" },
           icon("user"),
           h("span", {}, "Delegated to ", h("strong", {}, given.to), ` on ${new Date(given.at).toLocaleString()}`),
-          h("button", { class: "btn small", type: "button", onclick: () => {
+          h("button", { class: "btn small", type: "button", onclick: async () => {
             delegations = takeBack(delegations, row.email_id);
             writeDelegations(delegations);
             announce(`Took ${row.email_id} back.`);
             renderList();
             pane.renderDetail();
+            try {
+              await api.takeBackCase(row.email_id);
+            } catch { /* static demo: local-only */ }
           } }, "Take back")));
     } else {
       const name = h("input", { name: "person", class: "search", placeholder: "Name of the person to handle this", "aria-label": "Person to delegate this case to", autocomplete: "off", maxlength: "80" });
@@ -275,18 +292,24 @@ export function mountReview(root, ctx) {
         label.textContent = who ? `Send to ${who}` : "Send";
       });
       add(box,
-        h("form", { class: "delegate-form", onsubmit: (event) => {
+        h("form", { class: "delegate-form", onsubmit: async (event) => {
           event.preventDefault();
           const next = delegate(delegations, row.email_id, name.value);
           if (next === delegations) return;
           delegations = next;
+          const to = delegations[row.email_id].to;
           if (!writeDelegations(delegations)) announce("Could not save in this browser.");
-          else announce(`Delegated ${row.email_id} to ${delegations[row.email_id].to}.`);
+          else announce(`Delegated ${row.email_id} to ${to}.`);
           renderList();
           pane.renderDetail();
+          try {
+            await api.delegateCase(row.email_id, { to });
+          } catch (err) {
+            if (api.mode === "live") announce(`Delegated locally. Could not reach the server.`);
+          }
         } }, name, send));
     }
-    add(box, h("small", { class: "muted" }, "Demo only: nothing is emailed. The hand-over is kept in this browser."));
+    add(box, h("small", { class: "muted" }, "Nothing is emailed: the hand-over is recorded here for the team to see."));
     return box;
   }
 
@@ -307,7 +330,7 @@ export function mountReview(root, ctx) {
       banner ? h("div", { class: `banner ${banner.kind}` }, icon(banner.icon), banner.text) : null,
       isFailed(row) ? h("p", {}, retryButton(row, { api, ctx })) : null,
       h("p", {}, otherTabLink("parsing", row, "See how it was parsed")),
-      buildDelegate(row),
+      buildDelegate(row, kase),
       buildForm(row, kase),
       emailAndDocuments(kase, api),
     ];

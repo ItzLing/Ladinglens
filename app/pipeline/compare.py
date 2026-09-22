@@ -6,6 +6,7 @@ same schema by extract.py, the diff itself should be plain, auditable Python.
 import re
 from typing import Optional
 
+from app.pipeline.validate import _COUNT, _WEIGHT
 from app.schema import ShipmentFields
 
 # A comma between digit groups ("243,588") is a thousands separator, not text.
@@ -19,6 +20,21 @@ _WEIGHT_UNIT = re.compile(r"\bKGS?\b")
 # discrepancy. Restricted to these three fields on purpose: applying it to a
 # number would let "3" match "30" and hide a real container-count defect.
 _PARTY_FIELDS = frozenset({"shipper", "consignee", "notify_party"})
+# These two fields are quantities, not text: "6 x 40'HC" and "6" are the same
+# container count, and "131,058.00 KG" and "131058 KG" are the same weight. The
+# regexes are the same ones validate.py uses to accept the value in the first
+# place, so a value that passed validation always parses here too.
+_NUMERIC_PATTERNS = {"container_count": _COUNT, "gross_weight_kg": _WEIGHT}
+
+
+def _numeric(field: str, value: Optional[str]) -> Optional[float]:
+    pattern = _NUMERIC_PATTERNS.get(field)
+    if pattern is None or value is None:
+        return None
+    match = pattern.match(value.strip())
+    if match is None:
+        return None
+    return float(match.group("number").replace(",", ""))
 
 
 def _normalize(field: str, value: Optional[str]) -> Optional[str]:
@@ -47,12 +63,21 @@ def compare_fields(si: ShipmentFields, bl: ShipmentFields) -> dict[str, dict[str
     Words and digits are never altered, so a real difference still shows.
 
     A party field also matches when one side is the other plus an address -- see
-    _same_party.
+    _same_party. container_count and gross_weight_kg are compared as the number
+    they represent, not as normalized text, so "6 x 40'HC" matches "6" and
+    "131,058.00 KG" matches "131058 KG" -- see _numeric.
     """
     mismatches: dict[str, dict[str, Optional[str]]] = {}
     for field in ShipmentFields.model_fields:
         si_val = getattr(si, field)
         bl_val = getattr(bl, field)
+        if field in _NUMERIC_PATTERNS:
+            si_num = _numeric(field, si_val)
+            bl_num = _numeric(field, bl_val)
+            if si_num is not None and bl_num is not None:
+                if si_num != bl_num:
+                    mismatches[field] = {"si": si_val, "bl": bl_val}
+                continue
         si_norm = _normalize(field, si_val)
         bl_norm = _normalize(field, bl_val)
         if si_norm == bl_norm:
