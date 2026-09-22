@@ -88,7 +88,7 @@ class ApiCase(unittest.TestCase):
 class StatusAndReportTests(ApiCase):
     def test_status_says_idle_and_names_the_version_and_storage(self):
         body = self.client.get("/api/status").json()
-        self.assertEqual((body["version"], body["running"], body["storage"]), ("0.0.1", False, "files"))
+        self.assertEqual((body["version"], body["running"], body["storage"]), ("1.0.0", False, "files"))
 
     def test_status_reports_progress_while_a_run_holds_the_lock(self):
         self.save("sample", record("email_001", "SPAM", "OK"), record("email_002", "SPAM", "OK"))

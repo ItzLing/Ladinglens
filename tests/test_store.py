@@ -212,7 +212,7 @@ class MongoBackendTests(TempResults):
         run = self.client["ladinglens"]["runs"].find_one({"_id": run_id})
         self.assertEqual((run["scope"], run["limit"], run["counts"]["OK"]), ("sample", 5, 4))
         self.assertIsNotNone(run["finished_at"])
-        self.assertEqual(run["version"], "0.0.1")
+        self.assertEqual(run["version"], "1.0.0")
 
     def test_status_shows_counts_and_never_the_credentials(self):
         cp = self.s.checkpoint("full")
