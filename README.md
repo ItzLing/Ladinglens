@@ -10,6 +10,86 @@ confidently.
 
 Pipeline: **classify -> extract -> compare**, per [`app/pipeline/`](app/pipeline).
 
+**Live: <https://ladinglens.onrender.com/#/>** -- the deployed app, serving a finished
+run from MongoDB. Nothing to install. (Free hosting sleeps after ~15 minutes idle, so
+the first request may take up to a minute to wake it.)
+
+## Results
+
+Scored against the hackathon's own `score_cli.py` on all 520 emails:
+
+| stage | weight | score |
+|---|---|---|
+| Classification (macro-F1) | 0.30 | **1.000** |
+| SI vs BL comparison (defect F1) | 0.20 | **0.989** |
+| End-to-end defects caught | 0.50 | **1.000**  (46/46) |
+| **Final** | | **0.9978** |
+
+Every category is 1.00 precision *and* recall. Every real discrepancy in the dataset is
+found, and no email is flagged for a discrepancy it does not have.
+
+**Why 108 emails are escalated rather than answered.** 94 of the 220 comparison requests
+arrive with **no documents attached** -- the sender is asking for the draft BL to be sent.
+The system classifies them correctly and escalates them, because there is nothing to
+compare yet. It never guesses at a document it cannot see.
+
+## See it in a minute
+
+Easiest: open <https://ladinglens.onrender.com/#/>.
+
+To run it yourself, the dashboard reads a finished run, so no API key is needed just to
+look:
+
+```bash
+uvicorn app.main:app          # then open http://localhost:8000
+```
+
+```powershell
+uvicorn app.main:app
+```
+
+To reproduce the score from the committed results:
+
+```bash
+cd data/server && PYTHONIOENCODING=utf-8 python score_cli.py ../../results/output.json
+```
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; python data\server\score_cli.py results\output.json
+```
+
+## How it works
+
+```
+inbox email
+    |
+    v
+classify ........ 5 categories + confidence + a one-line summary   (1 LLM call)
+    |
+    |  only BL_COMPARISON continues
+    v
+read document ... txt / pdf / docx / xlsx, then OCR, then a vision model
+    |             (a ladder: each step only runs if the previous one fell short)
+    v
+extract ......... the 7 shipment fields from the SI and from the BL   (1 call each)
+    |
+    v
+compare ......... deterministic diff, NO model call -- so every flag is auditable
+    |
+    v
+verdict ......... OK | MISMATCH | NEEDS_REVIEW (with the reason and the evidence)
+```
+
+Three decisions worth pointing at:
+
+- **Comparison never asks a model.** Once both documents are normalised to the same
+  schema, the diff is plain Python. A flagged field can always be traced to two values.
+- **Infrastructure failure is never a verdict.** A rate limit or a timeout is recorded as
+  `processing_error`, kept apart from `unreadable`, and retried -- so an API outage can
+  never be mistaken for a problem with a document.
+- **Every result is written as it completes.** Runs are resumable and their progress is
+  visible, rather than living in memory until the end.
+
 > Commands below are given for **bash** and **PowerShell**. PowerShell has no inline
 > `VAR=value cmd` prefix and `curl` is an alias for `Invoke-WebRequest`, so the two
 > forms genuinely differ -- use the one for your shell.
