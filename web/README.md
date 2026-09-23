@@ -3,17 +3,18 @@
 ## What you are looking at
 
 Deployed at **<https://ladinglens.onrender.com/#/>** (Render, Docker, reading results
-from MongoDB). Locally it is the same app.
+from MongoDB). Locally it is the same app. There is no separate static deployment yet --
+see [Deploy to Vercel](#deploy-to-vercel) for how one would work.
 
 Start the app (`uvicorn app.main:app` from the repo root, then <http://localhost:8000>)
-and the left rail has four tabs:
+and the left rail has five tabs:
 
 | tab | what it shows |
 |---|---|
 | **Home** | the run at a glance: how many emails, how they were classified, how many mismatches, how many went to a person |
 | **Parsing** | how each attachment was read -- plain text, PDF, Word, Excel, or a scan that needed OCR or a vision model |
-| **Review** | the human-in-the-loop queue: emails the system would not decide on its own, with the reason and the source evidence, where a person can correct a field or delegate the case |
-| **Report** | every email, filterable. Open one to see the **SI and BL values side by side**, with the differing fields marked, and the source documents underneath |
+| **Review** | the human-in-the-loop queue: emails the system would not decide on its own, with the reason and the source evidence, where a person can correct a field or delegate the case. Corrections and delegations save to the backend (`POST`/`DELETE /api/emails/{id}/correction` and `/delegate`) and land in `results.jsonl` |
+| **Report** | the run in numbers, then every email, filterable. Open one to see the **SI and BL values side by side**, with the differing fields marked, and the source documents underneath. Export the filtered rows as CSV or copy a plain-text summary |
 | **Database** | the MongoDB collections behind it, when a database is configured |
 
 The Report tab is the one that answers the brief: pick any email marked *Mismatch* and it
@@ -27,8 +28,10 @@ It runs in two modes, chosen automatically when the page loads:
 
 - **Live**, when the FastAPI app is running (`uvicorn app.main:app`, then
   <http://localhost:8000>). It reads from `/api`, and can retry emails and start runs.
-- **Read-only demo**, when there is no API. It reads `report.json` instead. This is what a
-  static host such as Vercel serves.
+- **Read-only demo**, when there is no API. It reads `report.json` instead -- what a
+  static host with no backend (Vercel, GitHub Pages, ...) would serve. See
+  [Deploy to Vercel](#deploy-to-vercel): the instructions are ready, but nothing is
+  deployed there yet.
 
 ```
 index.html          the shell
@@ -36,7 +39,7 @@ css/                tokens (light and dark), base, layout, components
 js/main.js          start-up, hash router, keyboard
 js/api.js           the live adapter and the static adapter, one interface
 js/store.js         list filtering, sorting, counts, banners (pure, unit-tested)
-js/views/           home, parsing, report, data (the Database tab), soon (Review)
+js/views/           home, parsing, review, report, data (the Database tab), soon (fallback for an unknown tab)
 js/components/      rail, run control, chips, the field table and documents
 js/util/            dom helpers, icons, the word diff, formatting
 report.json         the demo data
@@ -86,15 +89,16 @@ ignore it.
 
 ## Deploy to Vercel
 
-Static hosting, no framework:
+**Not deployed yet.** This is static hosting, no framework, whenever it's wanted:
 
 1. Import the repo at [vercel.com/new](https://vercel.com/new).
 2. Set **Root Directory** to `web`.
 3. Framework preset: **Other**. Leave build & output settings empty.
 
 `report.json` must be committed for the deploy to serve it; there is no build step to
-generate it. The deployed page is the read-only demo: retrying, running, and the Database tab
-need the live app.
+generate it. Once deployed, the page would be the read-only demo: retrying, running, and
+the Database tab need the live app (<https://ladinglens.onrender.com/#/>), which already
+works today.
 
 ## Note on what gets published
 
