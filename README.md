@@ -54,14 +54,11 @@ straight from MongoDB. Nothing to install.
 > Free hosting sleeps after ~15 minutes idle, so the first request can take up to a
 > minute to wake it -- warm the URL before demoing it to someone.
 
-To run the same dashboard locally against a finished run (no API key needed just to look):
+To run the same dashboard locally against a finished run (no API key needed just to look;
+this command is identical in bash and PowerShell):
 
-```bash
-uvicorn app.main:app          # then open http://localhost:8000
 ```
-
-```powershell
-uvicorn app.main:app
+uvicorn app.main:app          # then open http://localhost:8000
 ```
 
 Add `--reload` while actively developing (see [Running the pipeline](#running-the-pipeline)).

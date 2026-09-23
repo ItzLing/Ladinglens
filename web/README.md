@@ -3,8 +3,7 @@
 ## What you are looking at
 
 Deployed at **<https://ladinglens.onrender.com/#/>** (Render, Docker, reading results
-from MongoDB). Locally it is the same app. There is no separate static deployment yet --
-see [Deploy to Vercel](#deploy-to-vercel) for how one would work.
+from MongoDB). Locally it is the same app.
 
 Start the app (`uvicorn app.main:app` from the repo root, then <http://localhost:8000>)
 and the left rail has five tabs:
@@ -28,10 +27,9 @@ It runs in two modes, chosen automatically when the page loads:
 
 - **Live**, when the FastAPI app is running (`uvicorn app.main:app`, then
   <http://localhost:8000>). It reads from `/api`, and can retry emails and start runs.
-- **Read-only demo**, when there is no API. It reads `report.json` instead -- what a
-  static host with no backend (Vercel, GitHub Pages, ...) would serve. See
-  [Deploy to Vercel](#deploy-to-vercel): the instructions are ready, but nothing is
-  deployed there yet.
+- **Read-only demo**, when there is no API. It reads `report.json` instead. Nothing is
+  hosted this way today -- the live app above is the only deployment -- but the mode
+  exists and is exercised by [Preview locally](#preview-locally) below.
 
 ```
 index.html          the shell
@@ -57,9 +55,10 @@ python web/build_report.py            # the full run, else the latest limited ru
 python web/build_report.py --sample   # the latest limited run
 ```
 
-Re-run this after a pipeline run, then commit and redeploy. The file that is checked in was
-converted from an older 520-email run, so it has no email summaries and only records the
-fields that differ; rebuild it after the next full run.
+Re-run this after a pipeline run and commit the result, so it's ready whenever the
+read-only demo is hosted somewhere. The file that is checked in was converted from an
+older 520-email run, so it has no email summaries and only records the fields that
+differ; rebuild it after the next full run.
 
 ## Preview locally
 
@@ -87,21 +86,3 @@ node --test "tests/js/*.test.js"
 `js/package.json` (`{"type": "module"}`) is what lets Node load the browser modules; browsers
 ignore it.
 
-## Deploy to Vercel
-
-**Not deployed yet.** This is static hosting, no framework, whenever it's wanted:
-
-1. Import the repo at [vercel.com/new](https://vercel.com/new).
-2. Set **Root Directory** to `web`.
-3. Framework preset: **Other**. Leave build & output settings empty.
-
-`report.json` must be committed for the deploy to serve it; there is no build step to
-generate it. Once deployed, the page would be the read-only demo: retrying, running, and
-the Database tab need the live app (<https://ladinglens.onrender.com/#/>), which already
-works today.
-
-## Note on what gets published
-
-`report.json` embeds dataset content: email subjects, senders, bodies and the SI/BL document
-text. It contains no ground truth. Deploying makes that content publicly readable by anyone
-with the URL.
