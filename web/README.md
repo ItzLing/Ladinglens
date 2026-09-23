@@ -2,6 +2,9 @@
 
 ## What you are looking at
 
+Deployed at **<https://ladinglens.onrender.com/#/>** (Render, Docker, reading results
+from MongoDB). Locally it is the same app.
+
 Start the app (`uvicorn app.main:app` from the repo root, then <http://localhost:8000>)
 and the left rail has four tabs:
 

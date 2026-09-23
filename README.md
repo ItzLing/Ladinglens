@@ -10,6 +10,10 @@ confidently.
 
 Pipeline: **classify -> extract -> compare**, per [`app/pipeline/`](app/pipeline).
 
+**Live: <https://ladinglens.onrender.com/#/>** -- the deployed app, serving a finished
+run from MongoDB. Nothing to install. (Free hosting sleeps after ~15 minutes idle, so
+the first request may take up to a minute to wake it.)
+
 ## Results
 
 Scored against the hackathon's own `score_cli.py` on all 520 emails:
@@ -31,7 +35,10 @@ compare yet. It never guesses at a document it cannot see.
 
 ## See it in a minute
 
-The dashboard reads a finished run, so no API key is needed just to look:
+Easiest: open <https://ladinglens.onrender.com/#/>.
+
+To run it yourself, the dashboard reads a finished run, so no API key is needed just to
+look:
 
 ```bash
 uvicorn app.main:app          # then open http://localhost:8000
