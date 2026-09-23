@@ -259,4 +259,4 @@ data/live/
 # own commit, so the folder stays on disk but is no longer tracked.
 # reference/
 
-deliverable/
+deliverables/

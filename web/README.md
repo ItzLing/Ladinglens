@@ -1,5 +1,22 @@
 # Ladinglens web
 
+## What you are looking at
+
+Start the app (`uvicorn app.main:app` from the repo root, then <http://localhost:8000>)
+and the left rail has four tabs:
+
+| tab | what it shows |
+|---|---|
+| **Home** | the run at a glance: how many emails, how they were classified, how many mismatches, how many went to a person |
+| **Parsing** | how each attachment was read -- plain text, PDF, Word, Excel, or a scan that needed OCR or a vision model |
+| **Review** | the human-in-the-loop queue: emails the system would not decide on its own, with the reason and the source evidence, where a person can correct a field or delegate the case |
+| **Report** | every email, filterable. Open one to see the **SI and BL values side by side**, with the differing fields marked, and the source documents underneath |
+| **Database** | the MongoDB collections behind it, when a database is configured |
+
+The Report tab is the one that answers the brief: pick any email marked *Mismatch* and it
+shows exactly which of the seven shipment fields disagree, what each document said, and the
+text those values came from.
+
 The UI: plain JavaScript (ES modules) and CSS, no build step and no dependencies. The plan
 and design are in [`DESIGN.md`](DESIGN.md).
 
